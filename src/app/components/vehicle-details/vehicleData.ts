@@ -22,7 +22,7 @@ export const modelsByBrand: Record<string, string[]> = {
   Toyota: ['Camry', 'Corolla', 'Land Cruiser', 'Yaris', 'RAV4', 'Hilux', 'Fortuner', 'Prado', 'Rush', 'Avalon', 'Supra', 'C-HR', 'Innova', 'Sequoia'],
   BMW: ['3 Series', '5 Series', '7 Series', 'X1', 'X3', 'X5', 'X7', 'M3', 'M5', 'Z4', 'iX', 'i4', '4 Series', '8 Series'],
   Mercedes: ['A-Class', 'C-Class', 'E-Class', 'S-Class', 'GLA', 'GLC', 'GLE', 'GLS', 'AMG GT', 'EQS', 'CLA', 'GLB'],
-  Nissan: ['Patrol', 'Altima', 'Sentra', 'Kicks', 'X-Trail', 'Pathfinder', 'Sunny', 'Maxima', '370Z', 'Navara', 'Juke'],
+  Nissan: ['Patrol', 'Altima', 'Sentra', 'Kicks', 'X-Trail', 'Pathfinder', 'Sunny', 'Maxima', '370Z', 'Navara', 'Juke', 'Magnite', 'Terrano', 'Qashqai'],
   Honda: ['Civic', 'Accord', 'CR-V', 'HR-V', 'Pilot', 'City', 'Jazz', 'Odyssey', 'BR-V', 'WR-V'],
   Hyundai: ['Tucson', 'Santa Fe', 'Elantra', 'Sonata', 'Creta', 'Kona', 'Palisade', 'Venue', 'Accent', 'i10', 'i20'],
   Ford: ['Mustang', 'Explorer', 'Expedition', 'Edge', 'Bronco', 'F-150', 'Ranger', 'Escape', 'EcoSport', 'Territory'],
@@ -37,4 +37,125 @@ export function getYearRange(): number[] {
 export function shouldAskBrandNew(year: number): boolean {
   const currentYear = 2026;
   return year === currentYear || year === currentYear - 1;
+}
+
+export interface VehicleSuggestion {
+  brand: string;
+  model: string;
+  logo: string;
+  display: string;
+}
+
+export function searchVehicles(query: string): VehicleSuggestion[] {
+  if (!query.trim()) return [];
+  const q = query.toLowerCase().trim();
+  const results: VehicleSuggestion[] = [];
+
+  for (const brand of carBrands) {
+    const brandName = brand.name.toLowerCase();
+    for (const model of modelsByBrand[brand.name] ?? []) {
+      const modelName = model.toLowerCase();
+      const combined = `${brandName} ${modelName}`;
+      const reverseCombined = `${modelName} ${brandName}`;
+
+      if (
+        combined.includes(q) ||
+        reverseCombined.includes(q) ||
+        brandName.includes(q) ||
+        modelName.includes(q)
+      ) {
+        results.push({
+          brand: brand.name,
+          model,
+          logo: brand.initial,
+          display: `${brand.name} ${model}`,
+        });
+      }
+    }
+  }
+
+  // Sort: exact brand match first, then alphabetical
+  results.sort((a, b) => {
+    const aExact = a.brand.toLowerCase() === q || a.model.toLowerCase() === q;
+    const bExact = b.brand.toLowerCase() === q || b.model.toLowerCase() === q;
+    if (aExact && !bExact) return -1;
+    if (!aExact && bExact) return 1;
+    return a.display.localeCompare(b.display);
+  });
+
+  return results.slice(0, 8);
+}
+
+export function parseVehicleInput(input: string): { brand?: string; model?: string; year?: number; isBrandNew?: boolean } {
+  const currentYear = 2026;
+  const raw = input.trim().toLowerCase();
+  let brand: string | undefined;
+  let model: string | undefined;
+  let year: number | undefined;
+  let isBrandNew: boolean | undefined;
+
+  // Extract relative age: "5 years old", "3 year old", "5 yr"
+  const ageMatch = raw.match(/(\d+)\s*(?:years?|yrs?)\s*(?:old)?/);
+  if (ageMatch) {
+    const age = parseInt(ageMatch[1]);
+    if (age >= 0 && age <= 20) {
+      year = currentYear - age;
+    }
+  }
+
+  // Extract "brand new" / "new"
+  if (/\bbrand\s*new\b/.test(raw) || /\bnew\b/.test(raw)) {
+    if (!year) year = currentYear;
+    isBrandNew = true;
+  }
+
+  // Extract absolute year if any token is a 4-digit number in range
+  if (!year) {
+    const tokens = raw.split(/\s+/);
+    for (const token of tokens) {
+      const num = parseInt(token);
+      if (num >= 2007 && num <= currentYear) {
+        year = num;
+      }
+    }
+  }
+
+  // Clean input for brand/model matching — remove age/year/new phrases
+  const cleaned = raw
+    .replace(/(\d+)\s*(?:years?|yrs?)\s*(?:old)?/g, '')
+    .replace(/\bbrand\s*new\b/g, '')
+    .replace(/\bnew\b/g, '')
+    .replace(/\b(20\d{2})\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Try to match brand
+  for (const b of carBrands) {
+    if (cleaned.includes(b.name.toLowerCase())) {
+      brand = b.name;
+      const remaining = cleaned.replace(b.name.toLowerCase(), '').trim();
+      if (remaining) {
+        const models = modelsByBrand[b.name] ?? [];
+        const match = models.find((m) => m.toLowerCase() === remaining || remaining.includes(m.toLowerCase()));
+        if (match) model = match;
+      }
+      break;
+    }
+  }
+
+  // If no brand found, try matching model directly (unique models)
+  if (!brand && cleaned) {
+    for (const b of carBrands) {
+      for (const m of modelsByBrand[b.name] ?? []) {
+        if (m.toLowerCase() === cleaned || cleaned.includes(m.toLowerCase())) {
+          brand = b.name;
+          model = m;
+          break;
+        }
+      }
+      if (brand) break;
+    }
+  }
+
+  return { brand, model, year, isBrandNew };
 }

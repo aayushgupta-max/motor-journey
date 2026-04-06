@@ -16,11 +16,28 @@ export function MulkiyaBottomSheet({ open, onOpenChange }: MulkiyaBottomSheetPro
   const [processing, setProcessing] = useState(false);
 
   const handleFrontChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) setFrontFile(e.target.files[0]);
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    // PDF = both sides in one document
+    if (file.type === 'application/pdf') {
+      setFrontFile(file);
+      setBackFile(file);
+      return;
+    }
+    // Simulate side detection — if back side detected in front slot, swap silently
+    // In production this would use OCR; here we just accept as-is
+    setFrontFile(file);
   };
 
   const handleBackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) setBackFile(e.target.files[0]);
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    if (file.type === 'application/pdf') {
+      setFrontFile(file);
+      setBackFile(file);
+      return;
+    }
+    setBackFile(file);
   };
 
   const handleContinue = () => {
@@ -48,11 +65,11 @@ export function MulkiyaBottomSheet({ open, onOpenChange }: MulkiyaBottomSheetPro
               <div className="w-10 h-1 bg-gray-200 rounded-full" />
             </div>
 
-            <div className="px-5 pb-8 pt-2">
+            <div className="px-5 pb-6 pt-2">
               {/* Header */}
               <div className="flex items-center justify-between mb-1">
                 <div>
-                  <h3 className="text-lg tracking-tight text-[#2D2D2D]">Upload Mulkiya</h3>
+                  <h3 className="text-lg tracking-tight text-[#2D2D2D] font-bold">Upload Mulkiya</h3>
                   <p className="text-sm text-gray-500">Front and back side required</p>
                 </div>
                 <button
@@ -64,13 +81,13 @@ export function MulkiyaBottomSheet({ open, onOpenChange }: MulkiyaBottomSheetPro
               </div>
 
               {/* Progress */}
-              <div className="flex items-center gap-2 my-5">
+              <div className="flex items-center gap-2 my-3">
                 <div className={`flex-1 h-1 rounded-full transition-colors ${frontFile ? 'bg-[#2D2D2D]' : 'bg-gray-100'}`} />
                 <div className={`flex-1 h-1 rounded-full transition-colors ${backFile ? 'bg-[#2D2D2D]' : 'bg-gray-100'}`} />
               </div>
 
               {/* Upload Cards */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2.5 mb-4">
                 {/* Front Side */}
                 <UploadCard
                   id="front"
@@ -93,10 +110,10 @@ export function MulkiyaBottomSheet({ open, onOpenChange }: MulkiyaBottomSheetPro
               </div>
 
               {/* Info */}
-              <div className="bg-[#F5F5F5] rounded-xl p-3 mb-5 flex items-start gap-3">
+              <div className="bg-[#F5F5F5] rounded-xl p-3 mb-4 flex items-start gap-3">
                 <span className="text-lg">💡</span>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Make sure the photo is clear and all text is readable. We'll extract your vehicle info automatically.
+                  Upload each side separately, or a single PDF with both sides — we'll handle the rest automatically.
                 </p>
               </div>
 

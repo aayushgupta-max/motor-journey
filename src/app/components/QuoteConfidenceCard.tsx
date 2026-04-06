@@ -1,6 +1,30 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertTriangle, Check, X, Upload, Calendar, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Check, X, Upload, Calendar, ShieldCheck, MessageSquare } from 'lucide-react';
+
+// Simple free-text parser for survey answers
+function parseGccInput(text: string): 'yes' | 'no' | null {
+  const t = text.toLowerCase().trim();
+  if (/gcc|gulf|spec|local|yes/.test(t)) return 'yes';
+  if (/non|import|no|japan|usa|american|european/.test(t)) return 'no';
+  return null;
+}
+
+function parseClaimInput(text: string): string | null {
+  const t = text.toLowerCase().trim();
+  if (/never|no claim|none|clean|0/.test(t)) return 'Never claimed';
+  if (/year|12|long|while/.test(t)) return '12+ months';
+  if (/6|half|few month/.test(t)) return '6–12 months';
+  if (/recent|last month|just|less/.test(t)) return 'Less than 6 months';
+  return null;
+}
+
+function parseNoClaimProofInput(text: string): 'yes' | 'no' | null {
+  const t = text.toLowerCase().trim();
+  if (/yes|have|got/.test(t)) return 'yes';
+  if (/no|don|nope/.test(t)) return 'no';
+  return null;
+}
 
 interface QuoteConfidenceCardProps {
   quotesCount: number;
@@ -8,7 +32,6 @@ interface QuoteConfidenceCardProps {
   answeredCount: number;
   totalDataPoints: number;
   allSurveyDone: boolean;
-  // Survey state
   gccSelection: 'yes' | 'no' | null;
   setGccSelection: (v: 'yes' | 'no' | null) => void;
   showDLUpload: boolean;
@@ -23,6 +46,58 @@ interface QuoteConfidenceCardProps {
   setHasNoClaimProof: (v: 'yes' | 'no' | null) => void;
   surveyStep: number;
   setSurveyStep: (v: number) => void;
+}
+
+// Collapsed answer pill
+function ConfirmedAnswer({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
+  return (
+    <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
+      <div className="flex items-center gap-2">
+        <Check className="w-3 h-3 text-[#2D2D2D]" />
+        <span className="text-xs text-[#2D2D2D]/70">{label}</span>
+        <span className="text-xs font-medium text-[#2D2D2D]">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+// Inline text input for free-text answers
+function SmartInput({ placeholder, onSubmit }: { placeholder: string; onSubmit: (text: string) => boolean }) {
+  const [text, setText] = useState('');
+  const [error, setError] = useState(false);
+
+  const handleSubmit = () => {
+    if (!text.trim()) return;
+    const success = onSubmit(text);
+    if (!success) {
+      setError(true);
+      setTimeout(() => setError(false), 1500);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      <div className={`flex items-center gap-2 bg-[#F7F7F7] rounded-lg px-3 h-9 transition-colors ${error ? 'ring-1 ring-red-300' : ''}`}>
+        <MessageSquare className="w-3 h-3 text-gray-400 flex-shrink-0" />
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => { setText(e.target.value); setError(false); }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          placeholder={placeholder}
+          className="flex-1 bg-transparent text-xs text-[#2D2D2D] placeholder-gray-300 outline-none"
+        />
+        {text && (
+          <button onClick={handleSubmit} className="text-[10px] font-medium text-[#2D2D2D] bg-[#E0E0E0] px-2 py-0.5 rounded-full flex-shrink-0">
+            Send
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className="text-[10px] text-red-400 mt-1 ml-1">Didn't catch that — try tapping an option above</p>
+      )}
+    </div>
+  );
 }
 
 export function QuoteConfidenceCard({
@@ -57,11 +132,10 @@ export function QuoteConfidenceCard({
 
   if (dismissed) return null;
 
-  const baselineScore = totalDataPoints - 4; // 8 from Mulkiya
+  const baselineScore = totalDataPoints - 4;
   const dataScore = baselineScore + (allSurveyDone ? 4 : answeredCount);
   const confidencePct = Math.round((dataScore / totalDataPoints) * 100);
   const remaining = allSurveyDone ? 0 : (4 - answeredCount);
-
 
   return (
     <motion.div
@@ -89,9 +163,8 @@ export function QuoteConfidenceCard({
             : 'linear-gradient(135deg, #E8E8E8 0%, #CFCFCF 100%)',
         }}
       >
-        {/* Header: Confidence Ring + Text */}
+        {/* Header */}
         <div className="flex items-center gap-3">
-          {/* Confidence Ring as primary icon */}
           <div className="flex-shrink-0">
             <div className="relative" style={{ width: 48, height: 48 }}>
               <svg width={48} height={48} className="-rotate-90">
@@ -141,7 +214,31 @@ export function QuoteConfidenceCard({
           </div>
         </div>
 
-        {/* Survey Questions — always visible */}
+        {/* Confirmed answers stack */}
+        {!allSurveyDone && (gccSelection !== null || dlUploaded || claimMonths !== null) && (
+          <div className="mt-3 space-y-1">
+            {gccSelection !== null && (
+              <ConfirmedAnswer
+                label="Spec"
+                value={gccSelection === 'yes' ? 'GCC Spec' : 'Non-GCC'}
+              />
+            )}
+            {dlUploaded && (
+              <ConfirmedAnswer label="License" value="Uploaded" />
+            )}
+            {claimMonths !== null && (
+              <ConfirmedAnswer label="Claims" value={claimMonths} />
+            )}
+            {hasNoClaimProof !== null && (
+              <ConfirmedAnswer
+                label="Certificate"
+                value={hasNoClaimProof === 'yes' ? 'Yes' : 'No'}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Survey Questions */}
         {!allSurveyDone && (
           <div className="mt-3">
             <AnimatePresence mode="wait">
@@ -181,10 +278,22 @@ export function QuoteConfidenceCard({
                       Non-GCC
                     </button>
                   </div>
+                  <SmartInput
+                    placeholder="or type: gcc, imported..."
+                    onSubmit={(text) => {
+                      const result = parseGccInput(text);
+                      if (result) {
+                        setGccSelection(result);
+                        setTimeout(() => setSurveyStep(1), 300);
+                        return true;
+                      }
+                      return false;
+                    }}
+                  />
                 </motion.div>
               )}
 
-              {/* Q2: DL Upload (with skip → goes to Q3, comes back at end without skip) */}
+              {/* Q2: DL Upload */}
               {surveyStep === 1 && (
                 <motion.div
                   key="q2-dl-upload"
@@ -242,7 +351,6 @@ export function QuoteConfidenceCard({
                             setTimeout(() => setSurveyStep(3), 300);
                           } else {
                             setHasNoClaimProof(null);
-                            // If DL was skipped, go to DL retry (step 4), else done
                             if (dlSkipped) {
                               setTimeout(() => setSurveyStep(4), 300);
                             }
@@ -256,10 +364,29 @@ export function QuoteConfidenceCard({
                       </button>
                     ))}
                   </div>
+                  <SmartInput
+                    placeholder="or type: never, 2 years ago..."
+                    onSubmit={(text) => {
+                      const result = parseClaimInput(text);
+                      if (result) {
+                        setClaimMonths(result);
+                        if (result === 'Never claimed') {
+                          setTimeout(() => setSurveyStep(3), 300);
+                        } else {
+                          setHasNoClaimProof(null);
+                          if (dlSkipped) {
+                            setTimeout(() => setSurveyStep(4), 300);
+                          }
+                        }
+                        return true;
+                      }
+                      return false;
+                    }}
+                  />
                 </motion.div>
               )}
 
-              {/* Q4: No claim proof (only if "Never claimed") */}
+              {/* Q4: No claim proof */}
               {surveyStep === 3 && (
                 <motion.div
                   key="q4-no-claim-proof"
@@ -299,10 +426,22 @@ export function QuoteConfidenceCard({
                       No
                     </button>
                   </div>
+                  <SmartInput
+                    placeholder="or type: yes, no..."
+                    onSubmit={(text) => {
+                      const result = parseNoClaimProofInput(text);
+                      if (result) {
+                        setHasNoClaimProof(result);
+                        if (dlSkipped) setTimeout(() => setSurveyStep(4), 300);
+                        return true;
+                      }
+                      return false;
+                    }}
+                  />
                 </motion.div>
               )}
 
-              {/* Q5: DL Upload retry (no skip — must upload) */}
+              {/* Q5: DL Upload retry */}
               {surveyStep === 4 && (
                 <motion.div
                   key="q5-dl-retry"

@@ -1,29 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import { ChevronRight, Camera, ArrowRight } from "lucide-react";
+import { Camera } from "lucide-react";
 import { MulkiyaBottomSheet } from "./MulkiyaBottomSheet";
-import { carBrands } from "./vehicle-details/vehicleData";
+import { SmartVehicleInput } from "./SmartVehicleInput";
 
 export function HeroSection() {
-  const navigate = useNavigate();
-  const [selectedBrand, setSelectedBrand] = useState<
-    number | null
-  >(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  const handleBrandSelect = (brandId: number) => {
-    setSelectedBrand(brandId);
-    const brand = carBrands.find((b) => b.id === brandId);
-    if (brand) {
-      setTimeout(() => {
-        navigate('/vehicle-details', { state: { brand } });
-      }, 300);
-    }
-  };
 
   return (
     <div className="bg-white">
-      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-6 pt-5 pb-6 md:py-8 max-w-5xl">
         {/* Title */}
         <div className="text-center mb-5">
           <h2 className="text-2xl md:text-3xl tracking-tight text-[#2D2D2D] mb-1 font-bold">
@@ -49,7 +34,7 @@ export function HeroSection() {
               </div>
 
               <div className="mb-4">
-                <h3 className="text-xl tracking-tight text-[#2D2D2D] mb-1">
+                <h3 className="text-xl tracking-tight text-[#2D2D2D] mb-1 font-bold">
                   Upload Mulkiya
                 </h3>
                 <p className="text-sm text-[#2D2D2D]/60">
@@ -69,56 +54,16 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Or divider chip - overlapping between cards */}
+          {/* Or divider chip */}
           <div className="flex items-center justify-center -my-7 relative z-10 md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:my-0">
             <div className="w-10 h-10 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center">
               <span className="text-xs font-semibold text-gray-500">Or</span>
             </div>
           </div>
 
-          {/* Brand Selection Card */}
+          {/* Smart Vehicle Input Card */}
           <div className="bg-[#EBEBEB] rounded-2xl p-5 flex flex-col">
-            <div className="mb-3">
-              <h3 className="text-xl tracking-tight text-[#2D2D2D] mb-1">
-                Select your car brand
-              </h3>
-              <p className="text-sm text-gray-500">
-                Enter details manually
-              </p>
-            </div>
-
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {carBrands.map((brand) => (
-                <button
-                  key={brand.id}
-                  onClick={() => handleBrandSelect(brand.id)}
-                  className={`flex flex-col items-center gap-2 py-3 px-1 rounded-xl transition-all active:scale-95 bg-gray-50 border border-gray-200 ${
-                    selectedBrand === brand.id
-                      ? "ring-2 ring-[#2D2D2D] ring-offset-1"
-                      : "hover:ring-2 hover:ring-gray-200"
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center overflow-hidden">
-                    <img
-                      src={`${brand.initial}`}
-                      alt={brand.name}
-                      className="w-7 h-7 object-contain rounded"
-                    />
-                  </div>
-                  <span className="text-[10px] leading-none text-gray-600">
-                    {brand.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <button
-              className="w-full h-11 rounded-xl bg-[#2D2D2D] hover:bg-[#404040] text-white flex items-center justify-center gap-2 transition-colors text-sm mt-auto"
-              onClick={() => navigate('/vehicle-details', { state: { moreBrands: true } })}
-            >
-              More Brands
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <SmartVehicleInput />
           </div>
         </div>
 

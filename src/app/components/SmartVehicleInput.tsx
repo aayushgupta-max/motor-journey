@@ -17,9 +17,13 @@ const popularBrands = carBrands.slice(0, 8);
 // Progressive suggestion phases
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
 
-// Always ask brand new vs pre-owned
-function shouldAskCondition(_year: number): boolean {
-  return true;
+// Only ask brand new vs pre-owned for current year or last year (if within 6 months)
+function shouldAskCondition(year: number): boolean {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  if (year === currentYear) return true;
+  if (year === currentYear - 1 && now.getMonth() < 6) return true; // Jan–Jun
+  return false;
 }
 
 function generateSuggestions(

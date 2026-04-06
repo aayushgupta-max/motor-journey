@@ -61,8 +61,8 @@ export function DLUploadBottomSheet({ open, onOpenChange, onComplete }: DLUpload
               </div>
 
               <div className="flex items-center gap-2 my-5">
-                <div className={`flex-1 h-1 rounded-full transition-colors ${frontFile ? 'bg-[#D4D4D4]' : 'bg-gray-100'}`} />
-                <div className={`flex-1 h-1 rounded-full transition-colors ${backFile ? 'bg-[#D4D4D4]' : 'bg-gray-100'}`} />
+                <div className={`flex-1 h-1 rounded-full transition-colors ${frontFile ? 'bg-[#2D2D2D]' : 'bg-gray-100'}`} />
+                <div className={`flex-1 h-1 rounded-full transition-colors ${backFile ? 'bg-[#2D2D2D]' : 'bg-gray-100'}`} />
               </div>
 
               <div className="space-y-3 mb-6">

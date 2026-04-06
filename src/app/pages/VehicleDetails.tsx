@@ -112,7 +112,7 @@ export default function VehicleDetails() {
         {/* Progress bar */}
         <div className="h-1 bg-gray-100">
           <div
-            className="h-full bg-[#D4D4D4] transition-all duration-300 ease-out"
+            className="h-full bg-[#2D2D2D] transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>

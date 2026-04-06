@@ -408,7 +408,7 @@ export default function Quotes() {
               <div className="text-right">
                 <p className="text-xs text-gray-500 line-through">AED {bestQuote.originalPrice}</p>
                 <FlipPrice value={allSurveyDone ? bestQuote.optimizedPrice : bestQuote.price} className="text-lg font-bold text-[#2D2D2D]" />
-                <p className="text-[10px] text-[#D4D4D4] bg-[#2D2D2D] px-2 py-0.5 rounded-full mt-1 inline-block">
+                <p className="text-[10px] text-[#D4D4D4] bg-[#2D2D2D] px-2 py-0.5 rounded-full mt-1 ml-1 inline-block whitespace-nowrap">
                   Save {Math.round(((bestQuote.originalPrice - bestQuote.price) / bestQuote.originalPrice) * 100)}%
                 </p>
               </div>

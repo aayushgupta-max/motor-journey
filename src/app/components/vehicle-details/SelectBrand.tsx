@@ -55,7 +55,7 @@ export function SelectBrand({ onSelect }: SelectBrandProps) {
                   className="w-8 h-8 object-contain rounded"
                 />
               </div>
-              <span className="text-xs text-[#2D2D2D]">{brand.name}</span>
+              <span className="text-sm text-[#2D2D2D]">{brand.name}</span>
             </button>
           ))}
         </div>

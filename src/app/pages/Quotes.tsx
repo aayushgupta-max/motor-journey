@@ -9,6 +9,7 @@ import { LoginModal } from '../components/LoginModal';
 import { AiAssistantButton } from '../components/AiAssistantButton';
 import { QuoteConfidenceCard } from '../components/QuoteConfidenceCard';
 import { FlipPrice } from '../components/FlipPrice';
+import { useAuth } from '../components/AuthContext';
 
 const allFilterOptions = [
   { label: 'Comprehensive', category: 'Coverage' },
@@ -101,7 +102,7 @@ const quotes = [
 
 export default function Quotes() {
   const navigate = useNavigate();
-  const isLoggedIn = localStorage.getItem('pb_logged_in') === 'true';
+  const { isLoggedIn, login } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(!isLoggedIn);
   const [unlocked, setUnlocked] = useState(isLoggedIn);
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'rating'>('price-low');
@@ -178,7 +179,7 @@ export default function Quotes() {
   const remainingQuotes = allFiltered.slice(1);
 
   const handleUnlock = () => {
-    localStorage.setItem('pb_logged_in', 'true');
+    login();
     setShowLoginModal(false);
     setUnlocked(true);
   };

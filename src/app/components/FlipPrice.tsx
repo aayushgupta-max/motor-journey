@@ -23,8 +23,16 @@ function FlipDigit({ digit, delay = 0 }: { digit: string; delay?: number }) {
     }
   }, [digit]);
 
+  const isComma = digit === ',';
+
   return (
-    <span className="relative inline-flex overflow-hidden" style={{ width: digit === ',' ? '0.35em' : '0.65em', height: '1.2em' }}>
+    <span
+      className="relative inline-flex overflow-hidden"
+      style={{
+        width: isComma ? '0.2em' : '0.58em',
+        height: '1.15em',
+      }}
+    >
       <AnimatePresence mode="popLayout">
         <motion.span
           key={current}
@@ -37,6 +45,7 @@ function FlipDigit({ digit, delay = 0 }: { digit: string; delay?: number }) {
             ease: [0.23, 1, 0.32, 1],
           }}
           className="absolute inset-0 flex items-center justify-center"
+          style={{ letterSpacing: '-0.02em' }}
         >
           {current}
         </motion.span>
@@ -56,11 +65,13 @@ export function FlipPrice({
   const digits = formatted.split('');
 
   return (
-    <span className={`inline-flex items-center ${className}`}>
-      <span className="mr-1 text-[0.6em]">AED</span>
-      {digits.map((d, i) => (
-        <FlipDigit key={`pos-${i}`} digit={d} delay={i * 80} />
-      ))}
+    <span className={`inline-flex items-center ${className}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+      <span className="text-[0.55em] tracking-tight opacity-70 mr-[0.3em]">AED</span>
+      <span className="inline-flex items-center" style={{ letterSpacing: '-0.03em' }}>
+        {digits.map((d, i) => (
+          <FlipDigit key={`pos-${i}`} digit={d} delay={i * 80} />
+        ))}
+      </span>
     </span>
   );
 }

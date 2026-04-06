@@ -48,7 +48,7 @@ export function SelectModel({ brandName, models, onSelect }: SelectModelProps) {
               onClick={() => onSelect(model)}
               className="w-full text-left px-4 py-3.5 flex items-center justify-between rounded-xl hover:bg-[#F7F7F7] active:scale-[0.98] transition-all"
             >
-              <span className="text-sm text-[#2D2D2D]">{model}</span>
+              <span className="text-[15px] text-[#2D2D2D]">{model}</span>
               <ChevronRight className="w-4 h-4 text-gray-300" />
             </button>
           ))

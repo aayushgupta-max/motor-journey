@@ -31,7 +31,7 @@ export const modelsByBrand: Record<string, string[]> = {
 
 export function getYearRange(): number[] {
   const currentYear = 2026;
-  return Array.from({ length: 10 }, (_, i) => currentYear - i);
+  return Array.from({ length: 20 }, (_, i) => currentYear - 19 + i);
 }
 
 export function shouldAskBrandNew(year: number): boolean {

@@ -45,7 +45,7 @@ export function SelectYear({ modelName, onSelect }: SelectYearProps) {
           <button
             key={year}
             onClick={() => handleYearTap(year)}
-            className={`h-12 rounded-xl text-sm font-medium transition-all active:scale-[0.98] ${
+            className={`h-12 rounded-xl text-[15px] font-medium transition-all active:scale-[0.98] ${
               selectedYear === year
                 ? 'bg-[#2D2D2D] text-[#D4D4D4]'
                 : 'bg-[#F7F7F7] text-[#2D2D2D] hover:bg-[#EFEFEF]'

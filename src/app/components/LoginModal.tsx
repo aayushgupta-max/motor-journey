@@ -7,6 +7,8 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [otp, setOtp] = useState('');
 
+  const phoneValid = phone.replace(/\s/g, '').length >= 7;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -66,9 +68,9 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
             </div>
             <button
               onClick={() => setStep('otp')}
-              disabled={phone.length < 7}
+              disabled={!phoneValid}
               className={`w-full h-12 rounded-xl flex items-center justify-center text-sm transition-all ${
-                phone.length >= 7
+                phoneValid
                   ? 'bg-[#2D2D2D] text-[#D4D4D4] active:scale-[0.98]'
                   : 'bg-gray-100 text-gray-300 cursor-not-allowed'
               }`}
@@ -77,10 +79,17 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
             </button>
             {quotesCount && (
               <button
-                onClick={() => onUnlock()}
-                className="w-full text-center text-xs text-gray-500 hover:text-gray-600 transition-colors mt-3"
+                onClick={() => {
+                  if (phoneValid) onUnlock();
+                }}
+                disabled={!phoneValid}
+                className={`w-full h-12 flex items-center justify-center text-sm transition-all mt-1 ${
+                  phoneValid
+                    ? 'text-[#2D2D2D] active:scale-[0.98]'
+                    : 'text-gray-300 cursor-not-allowed'
+                }`}
               >
-                Submit without OTP
+                Continue without OTP
               </button>
             )}
           </>
@@ -117,8 +126,8 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
           </>
         )}
 
-        <p className="text-[10px] text-gray-300 text-center mt-4">
-          By signing in, you agree to our Terms of Service & Privacy Policy
+        <p className="text-[10px] text-gray-500 text-center mt-4">
+          By signing in, you agree to our <a href="#" className="underline text-[#2D2D2D]">Terms of Service</a> & <a href="#" className="underline text-[#2D2D2D]">Privacy Policy</a>
         </p>
       </motion.div>
     </div>

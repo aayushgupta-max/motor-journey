@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { X } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
 
-export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnlock: () => void }) {
+export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => void; onUnlock: () => void; quotesCount?: number }) {
   const [phone, setPhone] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [otp, setOtp] = useState('');
@@ -20,18 +20,36 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg text-[#2D2D2D]">
-            {step === 'phone' ? 'Sign in' : 'Enter OTP'}
-          </h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            {quotesCount && step === 'phone' && (
+              <div className="w-11 h-11 rounded-xl bg-[#F7F7F7] flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-[#2D2D2D]" />
+              </div>
+            )}
+            <div>
+              <h3 className="text-sm font-medium text-[#2D2D2D] leading-tight">
+                {step === 'phone'
+                  ? quotesCount
+                    ? `Sign in to unlock all ${quotesCount} quotes`
+                    : 'Sign in'
+                  : 'Enter OTP'}
+              </h3>
+              {quotesCount && step === 'phone' && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Compare plans and buy your policy instantly
+                </p>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center shrink-0">
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         {step === 'phone' ? (
           <>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 mb-2">
               Enter your UAE mobile number to continue
             </p>
             <div className="flex items-center gap-2 mb-4">

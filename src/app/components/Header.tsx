@@ -4,6 +4,19 @@ import { LoginModal } from './LoginModal';
 
 export function Header() {
   const [showLogin, setShowLogin] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(localStorage.getItem('pb_logged_in') === 'true');
+
+  const handleSignOut = () => {
+    localStorage.removeItem('pb_logged_in');
+    setLoggedIn(false);
+    window.location.reload();
+  };
+
+  const handleUnlock = () => {
+    localStorage.setItem('pb_logged_in', 'true');
+    setLoggedIn(true);
+    setShowLogin(false);
+  };
 
   return (
     <>
@@ -23,12 +36,21 @@ export function Header() {
               <a href="#" className="text-sm text-white/70 hover:text-white transition-colors hidden sm:block">
                 Support
               </a>
-              <button
-                onClick={() => setShowLogin(true)}
-                className="text-sm bg-[#D4D4D4] text-[#2D2D2D] px-4 py-1.5 rounded-full hover:bg-[#E8E8E8] transition-colors cursor-pointer"
-              >
-                Sign in
-              </button>
+              {loggedIn ? (
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm bg-[#D4D4D4] text-[#2D2D2D] px-4 py-1.5 rounded-full hover:bg-[#E8E8E8] transition-colors cursor-pointer"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowLogin(true)}
+                  className="text-sm bg-[#D4D4D4] text-[#2D2D2D] px-4 py-1.5 rounded-full hover:bg-[#E8E8E8] transition-colors cursor-pointer"
+                >
+                  Sign in
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -37,7 +59,7 @@ export function Header() {
       {showLogin && (
         <LoginModal
           onClose={() => setShowLogin(false)}
-          onUnlock={() => setShowLogin(false)}
+          onUnlock={handleUnlock}
         />
       )}
     </>

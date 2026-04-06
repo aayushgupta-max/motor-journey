@@ -94,8 +94,9 @@ const quotes = [
 
 export default function Quotes() {
   const navigate = useNavigate();
-  const [showLoginModal, setShowLoginModal] = useState(true);
-  const [unlocked, setUnlocked] = useState(false);
+  const isLoggedIn = localStorage.getItem('pb_logged_in') === 'true';
+  const [showLoginModal, setShowLoginModal] = useState(!isLoggedIn);
+  const [unlocked, setUnlocked] = useState(isLoggedIn);
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'rating'>('price-low');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showAllFilters, setShowAllFilters] = useState(false);
@@ -171,6 +172,7 @@ export default function Quotes() {
   const remainingQuotes = allFiltered.slice(1);
 
   const handleUnlock = () => {
+    localStorage.setItem('pb_logged_in', 'true');
     setShowLoginModal(false);
     setUnlocked(true);
   };
@@ -779,7 +781,7 @@ export default function Quotes() {
 
       {/* Login Modal */}
       {showLoginModal && (
-        <LoginModal onClose={() => setShowLoginModal(false)} onUnlock={handleUnlock} />
+        <LoginModal onClose={() => setShowLoginModal(false)} onUnlock={handleUnlock} quotesCount={allFiltered.length} />
       )}
 
       {/* All Filters Bottom Sheet */}

@@ -8,6 +8,7 @@ import { DLUploadBottomSheet } from '../components/DLUploadBottomSheet';
 import { LoginModal } from '../components/LoginModal';
 import { AiAssistantButton } from '../components/AiAssistantButton';
 import { QuoteConfidenceCard } from '../components/QuoteConfidenceCard';
+import { FlipPrice } from '../components/FlipPrice';
 
 const allFilterOptions = [
   { label: 'Comprehensive', category: 'Coverage' },
@@ -34,6 +35,7 @@ const quotes = [
     bg: '#ECECEC',
     rating: 4.9,
     price: 1249,
+    optimizedPrice: 1049,
     originalPrice: 1899,
     coverage: 'Comprehensive',
     features: ['Agency Repair', '24/7 Roadside', 'Oman Extension', 'Personal Accident'],
@@ -47,6 +49,7 @@ const quotes = [
     bg: '#E8E8E8',
     rating: 4.8,
     price: 1389,
+    optimizedPrice: 1159,
     originalPrice: 2100,
     coverage: 'Comprehensive',
     features: ['Agency Repair', 'Windshield Cover', 'GAP Insurance'],
@@ -60,6 +63,7 @@ const quotes = [
     bg: '#F0F0F0',
     rating: 4.7,
     price: 1425,
+    optimizedPrice: 1199,
     originalPrice: 1950,
     coverage: 'Comprehensive',
     features: ['Non-Agency Repair', '24/7 Roadside', 'Oman Extension'],
@@ -73,6 +77,7 @@ const quotes = [
     bg: '#EFEFEF',
     rating: 4.8,
     price: 1510,
+    optimizedPrice: 1289,
     originalPrice: 2200,
     coverage: 'Comprehensive',
     features: ['Agency Repair', 'Natural Disaster', 'Theft Cover'],
@@ -86,6 +91,7 @@ const quotes = [
     bg: '#F2F2F2',
     rating: 4.6,
     price: 1599,
+    optimizedPrice: 1349,
     originalPrice: 2050,
     coverage: 'Third Party',
     features: ['Basic Cover', '24/7 Roadside'],
@@ -117,9 +123,7 @@ export default function Quotes() {
   const noClaimProofNeeded = claimMonths === 'Never claimed';
   const totalQuestions = noClaimProofNeeded ? 4 : 3;
   const answeredCount = (gccSelection !== null ? 1 : 0) + (dlUploaded ? 1 : 0) + (claimMonths !== null ? 1 : 0) + (noClaimProofNeeded && hasNoClaimProof !== null ? 1 : 0);
-  const allSurveyDone = dlSkipped
-    ? gccSelection !== null && claimMonths !== null && (!noClaimProofNeeded || hasNoClaimProof !== null)
-    : gccSelection !== null && dlUploaded && claimMonths !== null && (!noClaimProofNeeded || hasNoClaimProof !== null);
+  const allSurveyDone = gccSelection !== null && dlUploaded && claimMonths !== null && (!noClaimProofNeeded || hasNoClaimProof !== null);
   const [surveyBadgeDismissed, setSurveyBadgeDismissed] = useState(false);
 
   useEffect(() => {
@@ -402,7 +406,7 @@ export default function Quotes() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500 line-through">AED {bestQuote.originalPrice}</p>
-                <p className="text-lg font-bold text-[#2D2D2D]">AED {bestQuote.price}</p>
+                <FlipPrice value={allSurveyDone ? bestQuote.optimizedPrice : bestQuote.price} className="text-lg font-bold text-[#2D2D2D]" />
                 <p className="text-[10px] text-[#D4D4D4] bg-[#2D2D2D] px-2 py-0.5 rounded-full mt-1 inline-block">
                   Save {Math.round(((bestQuote.originalPrice - bestQuote.price) / bestQuote.originalPrice) * 100)}%
                 </p>
@@ -429,7 +433,7 @@ export default function Quotes() {
                 onClick={() => setShowLoginModal(true)}
                 className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]"
               >
-                <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${bestQuote.price}/yr` : `Starting at AED ${bestQuote.price}/yr`}</span>
+                <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${bestQuote.optimizedPrice}/yr` : `Starting at AED ${bestQuote.price}/yr`}</span>
               </button>
             </div>
           </div>
@@ -462,7 +466,7 @@ export default function Quotes() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-[#2D2D2D]">AED {quote.price}</p>
+                    <FlipPrice value={allSurveyDone ? quote.optimizedPrice : quote.price} className="text-lg font-bold text-[#2D2D2D]" />
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -476,7 +480,7 @@ export default function Quotes() {
                       View details
                     </button>
                     <button className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]">
-                      <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${quote.price}/yr` : `Starting at AED ${quote.price}/yr`}</span>
+                      <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${quote.optimizedPrice}/yr` : `Starting at AED ${quote.price}/yr`}</span>
                     </button>
                   </div>
                 )}
@@ -544,10 +548,10 @@ export default function Quotes() {
         onComplete={() => {
           setDlUploaded(true);
           setDlSkipped(false);
-          if (surveyStep === 0) {
-            setSurveyStep(1);
+          if (surveyStep === 1) {
+            setSurveyStep(2);
           }
-          // If step 3 (retry), dlSkipped becomes false → allSurveyDone triggers
+          // If step 4 (retry), dlUploaded=true + dlSkipped=false → allSurveyDone triggers
         }}
       />
       <AiAssistantButton />

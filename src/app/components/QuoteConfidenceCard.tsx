@@ -146,93 +146,84 @@ export function QuoteConfidenceCard({
         {!allSurveyDone && (
           <div className="mt-3">
             <AnimatePresence mode="wait">
-              {/* Q1: GCC Spec with flip to DL Upload */}
+              {/* Q1: GCC Spec */}
               {surveyStep === 0 && (
                 <motion.div
                   key="q1-gcc"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
+                  className="bg-white rounded-[10px] p-4"
                 >
-                  <div className="relative bg-white rounded-[10px]" style={{ perspective: '800px' }}>
-                    <motion.div
-                      animate={{ rotateX: showDLUpload ? 180 : 0 }}
-                      transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-                      style={{ transformStyle: 'preserve-3d' }}
-                      className="relative"
+                  <p className="text-sm text-[#2D2D2D] mb-3">Is your car GCC spec or Non-GCC?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setGccSelection('yes');
+                        setTimeout(() => setSurveyStep(1), 300);
+                      }}
+                      className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                        gccSelection === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
+                      }`}
                     >
-                      {/* Front: GCC Question */}
-                      <div
-                        className={`p-4 ${showDLUpload ? 'absolute inset-0' : 'relative'}`}
-                        style={{ backfaceVisibility: 'hidden' }}
-                      >
-                        <p className="text-sm text-[#2D2D2D] mb-3">Is your car GCC spec or Non-GCC?</p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setGccSelection('yes');
-                              setTimeout(() => setShowDLUpload(true), 400);
-                            }}
-                            className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                              gccSelection === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
-                            }`}
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            GCC Spec
-                          </button>
-                          <button
-                            onClick={() => {
-                              setGccSelection('no');
-                              setTimeout(() => setShowDLUpload(true), 400);
-                            }}
-                            className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                              gccSelection === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
-                            }`}
-                          >
-                            <X className="w-3.5 h-3.5" />
-                            Non-GCC
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Back: DL Upload */}
-                      <div
-                        className={`p-4 flex flex-col items-center justify-center ${showDLUpload ? 'relative' : 'absolute inset-0'}`}
-                        style={{ backfaceVisibility: 'hidden', transform: 'rotateX(180deg)' }}
-                      >
-                        <div className="w-12 h-12 rounded-[8px] bg-[#EFEFEF] flex items-center justify-center mb-3">
-                          <Upload className="w-5 h-5 text-[#2D2D2D]" />
-                        </div>
-                        <p className="text-sm text-[#2D2D2D] mb-1">Upload your Driving License</p>
-                        <p className="text-[11px] text-[#2D2D2D]/40 mb-4">We'll auto-fill your details instantly</p>
-                        <div className="flex gap-2 w-full">
-                          <button
-                            onClick={() => setShowDLSheet(true)}
-                            className="flex-1 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            Upload DL
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDlSkipped(true);
-                              setSurveyStep(1);
-                            }}
-                            className="flex-1 h-10 rounded-xl bg-[#F7F7F7] text-[#2D2D2D]/60 text-sm transition-all active:scale-[0.98] flex items-center justify-center"
-                          >
-                            Skip
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
+                      <Check className="w-3.5 h-3.5" />
+                      GCC Spec
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGccSelection('no');
+                        setTimeout(() => setSurveyStep(1), 300);
+                      }}
+                      className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                        gccSelection === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
+                      }`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Non-GCC
+                    </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* Q2: Claim months */}
+              {/* Q2: DL Upload (with skip → goes to Q3, comes back at end without skip) */}
               {surveyStep === 1 && (
                 <motion.div
-                  key="q2-claim-months"
+                  key="q2-dl-upload"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="bg-white rounded-[10px] p-4 flex flex-col items-center justify-center"
+                >
+                  <div className="w-12 h-12 rounded-[8px] bg-[#F5F5F5] flex items-center justify-center mb-3">
+                    <Upload className="w-5 h-5 text-[#666666]" />
+                  </div>
+                  <p className="text-sm text-[#2D2D2D] mb-1">Upload your Driving License</p>
+                  <p className="text-[11px] text-[#2D2D2D]/40 mb-4">We'll auto-fill your details instantly</p>
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => setShowDLSheet(true)}
+                      className="flex-1 h-10 rounded-[8px] bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      Upload DL
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDlSkipped(true);
+                        setSurveyStep(2);
+                      }}
+                      className="flex-1 h-10 rounded-[8px] bg-[#F7F7F7] text-[#2D2D2D]/60 text-sm transition-all active:scale-[0.98] flex items-center justify-center"
+                    >
+                      Skip for now
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Q3: Claim months */}
+              {surveyStep === 2 && (
+                <motion.div
+                  key="q3-claim-months"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -249,13 +240,13 @@ export function QuoteConfidenceCard({
                         onClick={() => {
                           setClaimMonths(opt);
                           if (opt === 'Never claimed') {
-                            setTimeout(() => setSurveyStep(2), 300);
+                            setTimeout(() => setSurveyStep(3), 300);
                           } else {
                             setHasNoClaimProof(null);
-                            setTimeout(() => {
-                              if (dlSkipped) setSurveyStep(3);
-                              // else survey is done (skip no-claim proof step)
-                            }, 300);
+                            // If DL was skipped, go to DL retry (step 4), else done
+                            if (dlSkipped) {
+                              setTimeout(() => setSurveyStep(4), 300);
+                            }
                           }
                         }}
                         className={`h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center ${
@@ -269,10 +260,10 @@ export function QuoteConfidenceCard({
                 </motion.div>
               )}
 
-              {/* Q3: No claim proof */}
-              {surveyStep === 2 && (
+              {/* Q4: No claim proof (only if "Never claimed") */}
+              {surveyStep === 3 && (
                 <motion.div
-                  key="q3-no-claim-proof"
+                  key="q4-no-claim-proof"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -287,7 +278,7 @@ export function QuoteConfidenceCard({
                     <button
                       onClick={() => {
                         setHasNoClaimProof('yes');
-                        if (dlSkipped) setTimeout(() => setSurveyStep(3), 300);
+                        if (dlSkipped) setTimeout(() => setSurveyStep(4), 300);
                       }}
                       className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                         hasNoClaimProof === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
@@ -299,7 +290,7 @@ export function QuoteConfidenceCard({
                     <button
                       onClick={() => {
                         setHasNoClaimProof('no');
-                        if (dlSkipped) setTimeout(() => setSurveyStep(3), 300);
+                        if (dlSkipped) setTimeout(() => setSurveyStep(4), 300);
                       }}
                       className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                         hasNoClaimProof === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
@@ -312,10 +303,10 @@ export function QuoteConfidenceCard({
                 </motion.div>
               )}
 
-              {/* Q4: DL retry (if skipped) */}
-              {surveyStep === 3 && (
+              {/* Q5: DL Upload retry (no skip — must upload) */}
+              {surveyStep === 4 && (
                 <motion.div
-                  key="q4-dl-retry"
+                  key="q5-dl-retry"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -326,23 +317,13 @@ export function QuoteConfidenceCard({
                   </div>
                   <p className="text-sm text-[#2D2D2D] mb-1">Last step — Upload your Driving License</p>
                   <p className="text-[11px] text-[#2D2D2D]/40 mb-4">Get more accurate quotes with your DL details</p>
-                  <div className="flex gap-2 w-full">
-                    <button
-                      onClick={() => setShowDLSheet(true)}
-                      className="flex-1 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      Upload DL
-                    </button>
-                    <button
-                      onClick={() => {
-                        setDlSkipped(false);
-                      }}
-                      className="flex-1 h-10 rounded-xl bg-[#F7F7F7] text-[#2D2D2D]/60 text-sm transition-all active:scale-[0.98] flex items-center justify-center"
-                    >
-                      Upload Later
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowDLSheet(true)}
+                    className="w-full h-10 rounded-[8px] bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload DL
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>

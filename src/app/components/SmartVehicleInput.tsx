@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Search, Check, ChevronRight, X, Pencil, ArrowLeft } from 'lucide-react';
+import { Search, Check, X, ArrowLeft, SendHorizonal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   carBrands,
@@ -8,140 +8,233 @@ import {
   getYearRange,
   shouldAskBrandNew,
   parseVehicleInput,
+  modelsByBrand,
 } from './vehicle-details/vehicleData';
 import type { VehicleSuggestion } from './vehicle-details/vehicleData';
 
-type Step = 'vehicle' | 'year' | 'brand-new';
-
 const popularBrands = carBrands.slice(0, 8);
+
+// Progressive suggestion phases
+type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
+
+// Only ask brand new vs pre-owned for very recent cars
+function shouldAskCondition(year: number): boolean {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  if (year === currentYear) return true;
+  if (year === currentYear - 1) {
+    // Within first 6 months of current year, a "last year" car could still be brand new
+    return now.getMonth() < 6;
+  }
+  return false;
+}
+
+function generateSuggestions(
+  inputText: string,
+  phase: SuggestionPhase
+): { text: string; phase: SuggestionPhase }[] {
+  if (phase === 'brand') {
+    // Reversed so most popular (Toyota) is at bottom — visible first on open
+    return [...carBrands].reverse().map((b) => ({
+      text: `I have a ${b.name}`,
+      phase: 'brand' as SuggestionPhase,
+    }));
+  }
+
+  if (phase === 'model') {
+    // Models already sorted least→most popular in data; bottom = most popular
+    const parsed = parseVehicleInput(inputText);
+    if (parsed?.brand) {
+      const models = modelsByBrand[parsed.brand] ?? [];
+      return models.map((m) => ({
+        text: `I have a ${parsed.brand} ${m}`,
+        phase: 'model' as SuggestionPhase,
+      }));
+    }
+  }
+
+  if (phase === 'year') {
+    const parsed = parseVehicleInput(inputText);
+    if (parsed?.brand && parsed?.model) {
+      // Oldest first, newest last (bottom = most recent, shown first on open)
+      const years = getYearRange();
+      return years.map((y) => ({
+        text: `I have a ${parsed.brand} ${parsed.model}, ${y} model`,
+        phase: 'year' as SuggestionPhase,
+      }));
+    }
+  }
+
+  if (phase === 'condition') {
+    const parsed = parseVehicleInput(inputText);
+    if (parsed?.brand && parsed?.model && parsed?.year) {
+      return [
+        {
+          text: `I have a ${parsed.brand} ${parsed.model}, ${parsed.year} model, pre-owned`,
+          phase: 'condition' as SuggestionPhase,
+        },
+        {
+          text: `I have a ${parsed.brand} ${parsed.model}, ${parsed.year} model, brand new`,
+          phase: 'condition' as SuggestionPhase,
+        },
+      ];
+    }
+  }
+
+  return [];
+}
+
+// Ghost autocomplete
+function getGhostText(query: string, suggestions: { text: string }[]): string | null {
+  if (!query.trim()) return null;
+  const q = query.toLowerCase();
+  for (const s of suggestions) {
+    if (s.text.toLowerCase().startsWith(q) && s.text.length > query.length) {
+      return s.text;
+    }
+  }
+  return null;
+}
 
 export function SmartVehicleInput() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
-  const [step, setStep] = useState<Step>('vehicle');
-  const [suggestions, setSuggestions] = useState<VehicleSuggestion[]>([]);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleSuggestion | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [isBrandNew, setIsBrandNew] = useState<boolean | null>(null);
+  const [phase, setPhase] = useState<SuggestionPhase>('brand');
 
-  const years = getYearRange();
-  const parsed = query.trim().length > 2 ? parseVehicleInput(query) : null;
-  const hasQuickMatch = parsed?.brand && parsed?.model;
+  const currentSuggestions = generateSuggestions(query, phase);
+  const ghost = getGhostText(query, currentSuggestions);
 
-  useEffect(() => {
-    if (query.trim().length > 0) {
-      setSuggestions(searchVehicles(query));
-    } else {
-      setSuggestions([]);
-    }
-  }, [query]);
-
-  const handleQuickMatch = () => {
-    if (!parsed?.brand || !parsed?.model) return;
-    const brand = carBrands.find((b) => b.name === parsed.brand);
-    if (!brand) return;
-
-    const vehicle: VehicleSuggestion = {
-      brand: parsed.brand,
-      model: parsed.model,
-      logo: brand.initial,
-      display: `${parsed.brand} ${parsed.model}`,
-    };
-
-    if (parsed.year) {
-      // We have everything — go straight to quotes
-      setSelectedVehicle(vehicle);
-      setSelectedYear(parsed.year);
-      setIsBrandNew(parsed.isBrandNew ?? null);
-      setQuery('');
-      setSuggestions([]);
-
-      if (!parsed.isBrandNew && shouldAskBrandNew(parsed.year)) {
-        setStep('brand-new');
-      } else {
-        const brandObj = carBrands.find((b) => b.name === parsed.brand);
-        setTimeout(() => {
-          navigate('/quotes', {
-            state: {
-              brand: brandObj,
-              model: parsed.model,
-              year: parsed.year,
-              isBrandNew: parsed.isBrandNew ?? null,
-            },
-          });
-        }, 250);
-      }
-    } else {
-      // Have brand+model, need year
-      handleSelectVehicle(vehicle);
-    }
-  };
+  // Filter suggestions based on typed text
+  const filteredSuggestions = query.trim()
+    ? currentSuggestions.filter((s) =>
+        s.text.toLowerCase().includes(query.toLowerCase().replace(/,?\s*\d{4}\s*model\s*$/, '').trim())
+        || s.text.toLowerCase().startsWith(query.toLowerCase())
+      )
+    : currentSuggestions;
 
   useEffect(() => {
-    if (expanded && step === 'vehicle') {
+    if (expanded) {
       setTimeout(() => inputRef.current?.focus(), 200);
     }
-  }, [expanded, step]);
+  }, [expanded, phase]);
+
+  // Auto-scroll suggestions to bottom so last items show first
+  useEffect(() => {
+    if (expanded && scrollAreaRef.current) {
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      }, 50);
+    }
+  }, [expanded, phase]);
 
   const openExpanded = (initialQuery?: string) => {
-    if (initialQuery) setQuery(initialQuery);
+    if (initialQuery) {
+      setQuery(initialQuery);
+      // Determine phase from initial query
+      const parsed = parseVehicleInput(initialQuery);
+      if (parsed?.brand && parsed?.model && parsed?.year) setPhase('condition');
+      else if (parsed?.brand && parsed?.model) setPhase('year');
+      else if (parsed?.brand) setPhase('model');
+      else setPhase('brand');
+    }
     setExpanded(true);
   };
 
   const closeExpanded = () => {
     setExpanded(false);
     setQuery('');
-    setSuggestions([]);
-    setSelectedVehicle(null);
-    setSelectedYear(null);
-    setIsBrandNew(null);
-    setStep('vehicle');
+    setPhase('brand');
   };
 
-  const handleSelectVehicle = (suggestion: VehicleSuggestion) => {
-    setSelectedVehicle(suggestion);
-    setQuery('');
-    setSuggestions([]);
-    setStep('year');
+  const handleSuggestionClick = (suggestion: { text: string; phase: SuggestionPhase }) => {
+    if (suggestion.phase === 'brand') {
+      setPhase('model');
+      setQuery(suggestion.text + ' ');
+    } else if (suggestion.phase === 'model') {
+      setPhase('year');
+      setQuery(suggestion.text + ', ');
+    } else if (suggestion.phase === 'year') {
+      const parsed = parseVehicleInput(suggestion.text);
+      if (parsed?.year && shouldAskCondition(parsed.year)) {
+        setPhase('condition');
+        setQuery(suggestion.text + ', ');
+      } else {
+        handleSubmit(suggestion.text);
+        return;
+      }
+    } else if (suggestion.phase === 'condition') {
+      handleSubmit(suggestion.text);
+    }
+
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const handleSelectYear = (year: number) => {
-    setSelectedYear(year);
-    if (shouldAskBrandNew(year)) {
-      setStep('brand-new');
-    } else {
-      navigateToQuotes(year, null);
+  const handleSubmit = (text?: string) => {
+    const input = text || query;
+    const parsed = parseVehicleInput(input);
+
+    if (parsed?.brand && parsed?.model && parsed?.year && (parsed?.isBrandNew !== undefined || !shouldAskCondition(parsed.year))) {
+      const brandObj = carBrands.find((b) => b.name === parsed.brand);
+      setTimeout(() => {
+        navigate('/quotes', {
+          state: {
+            brand: brandObj,
+            model: parsed.model,
+            year: parsed.year,
+            isBrandNew: parsed.isBrandNew ?? null,
+          },
+        });
+      }, 250);
+    } else if (parsed?.brand && parsed?.model && parsed?.year && shouldAskCondition(parsed.year)) {
+      setPhase('condition');
+    } else if (parsed?.brand && parsed?.model) {
+      setPhase('year');
+    } else if (parsed?.brand) {
+      setPhase('model');
     }
   };
 
-  const handleBrandNew = (value: boolean) => {
-    setIsBrandNew(value);
-    navigateToQuotes(selectedYear!, value);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && ghost && query.length < ghost.length) {
+      e.preventDefault();
+      setQuery(ghost);
+      // Advance phase based on what ghost completed
+      const parsed = parseVehicleInput(ghost);
+      if (parsed?.brand && parsed?.model && parsed?.year) {
+        // Don't auto-navigate, let user confirm
+      } else if (parsed?.brand && parsed?.model) {
+        setPhase('year');
+      } else if (parsed?.brand) {
+        setPhase('model');
+      }
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    }
   };
 
-  const navigateToQuotes = (year: number, brandNew: boolean | null) => {
-    const brand = carBrands.find((b) => b.name === selectedVehicle?.brand);
-    setTimeout(() => {
-      navigate('/quotes', {
-        state: {
-          brand,
-          model: selectedVehicle?.model,
-          year,
-          isBrandNew: brandNew,
-        },
-      });
-    }, 250);
-  };
-
-  const handleEditVehicle = () => {
-    setSelectedVehicle(null);
-    setSelectedYear(null);
-    setIsBrandNew(null);
-    setStep('vehicle');
-    setQuery('');
-    setTimeout(() => inputRef.current?.focus(), 100);
+  // When query changes manually (typing), detect phase
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    const parsed = parseVehicleInput(val);
+    if (parsed?.brand && parsed?.model && parsed?.year && (parsed?.isBrandNew !== undefined || !shouldAskCondition(parsed.year))) {
+      setPhase('done');
+    } else if (parsed?.brand && parsed?.model && parsed?.year && shouldAskCondition(parsed.year)) {
+      setPhase('condition');
+    } else if (parsed?.brand && parsed?.model) {
+      setPhase('year');
+    } else if (parsed?.brand) {
+      setPhase('model');
+    } else {
+      setPhase('brand');
+    }
   };
 
   return (
@@ -150,7 +243,6 @@ export function SmartVehicleInput() {
       <div className="space-y-3">
         <p className="text-sm text-[#2D2D2D] font-bold mb-2">Tell us about your car</p>
 
-        {/* Fake search input - opens full screen */}
         <button
           onClick={() => openExpanded()}
           className="w-full h-12 pl-10 pr-4 rounded-xl bg-white text-sm text-gray-300 text-left border border-gray-200 relative"
@@ -159,14 +251,13 @@ export function SmartVehicleInput() {
           e.g. Toyota Camry or just Camry...
         </button>
 
-        {/* Brand grid */}
         <div>
-          <p className="text-xs text-gray-400 mb-2.5">Popular brands</p>
+          <p className="text-xs text-gray-400 mb-2.5">I have a...</p>
           <div className="grid grid-cols-4 gap-2">
             {popularBrands.map((brand) => (
               <button
                 key={brand.id}
-                onClick={() => openExpanded(brand.name + ' ')}
+                onClick={() => openExpanded('I have a ' + brand.name + ' ')}
                 className="flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl bg-white border border-gray-100 hover:border-gray-300 active:scale-[0.97] transition-all"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden">
@@ -187,10 +278,10 @@ export function SmartVehicleInput() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 bg-[#F7F7F7]"
+            className="fixed inset-0 z-50 bg-white flex flex-col"
           >
-            {/* Header — matches Quotes page */}
-            <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+            {/* Header */}
+            <div className="border-b border-gray-100 flex-shrink-0">
               <div className="container mx-auto px-5 py-3 max-w-5xl flex items-center gap-3">
                 <button
                   onClick={closeExpanded}
@@ -199,204 +290,115 @@ export function SmartVehicleInput() {
                   <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
                 </button>
                 <div>
-                  <p className="text-sm text-[#2D2D2D]">Find your car</p>
-                  <p className="text-xs text-gray-500">Search or pick a brand to get started</p>
+                  <p className="text-sm text-[#2D2D2D] font-bold">Find your car</p>
+                  <p className="text-xs text-gray-400">Tap a suggestion or just type freely</p>
                 </div>
               </div>
             </div>
 
-            <div className="px-5 pt-4 pb-8 overflow-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-              {/* Confirmed vehicle pill */}
-              <AnimatePresence>
-                {selectedVehicle && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 mb-4"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
-                      <img src={selectedVehicle.logo} alt={selectedVehicle.brand} className="w-6 h-6 object-contain" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#2D2D2D] truncate">{selectedVehicle.display}</p>
-                      {selectedYear && (
-                        <p className="text-xs text-gray-500">{selectedYear}{isBrandNew ? ' · Brand New' : ''}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-4 h-4 text-[#2D2D2D]" />
-                      <button onClick={handleEditVehicle} className="w-7 h-7 rounded-full bg-[#F7F7F7] flex items-center justify-center">
-                        <Pencil className="w-3 h-3 text-gray-500" />
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            {/* Question */}
+            <div className="px-5 pt-5 pb-3 flex-shrink-0">
+              <h2 className="text-xl font-bold text-[#2D2D2D] tracking-tight">
+                {phase === 'brand' && 'Tell us about your car'}
+                {phase === 'model' && 'Which model?'}
+                {phase === 'year' && 'What year?'}
+                {phase === 'condition' && 'Brand new or pre-owned?'}
+                {phase === 'done' && 'Looking good!'}
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                {phase === 'brand' && 'Pick a suggestion or type freely'}
+                {phase === 'model' && 'Select your model below'}
+                {phase === 'year' && 'Almost there — pick the year'}
+                {phase === 'condition' && 'Last step — just one more thing'}
+                {phase === 'done' && 'Hit send to get your quotes'}
+              </p>
+            </div>
 
-              <AnimatePresence mode="wait">
-                {/* Step: Vehicle search */}
-                {step === 'vehicle' && (
-                  <motion.div
-                    key="vehicle-step"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    {/* Real search input */}
-                    <p className="text-sm text-[#2D2D2D] font-bold mb-2">What car do you drive?</p>
-                    <div className="relative mb-4">
-                      <Search className="w-4 h-4 text-gray-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="e.g. Nissan Magnite 5 years old..."
-                        className="w-full h-12 pl-10 pr-10 rounded-xl bg-white text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-gray-200 focus:border-[#2D2D2D] transition-colors"
-                      />
-                      {query && (
-                        <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <X className="w-4 h-4 text-gray-300" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Quick match card */}
-                    {hasQuickMatch && (
-                      <motion.button
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        onClick={handleQuickMatch}
-                        className="w-full mb-3 p-4 rounded-xl bg-[#F0F0F0] border border-gray-200 text-left flex items-center gap-3 active:scale-[0.98] transition-all"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+            {/* Suggestions — scrollable, anchored to bottom near input */}
+            <div ref={scrollAreaRef} className="flex-1 overflow-auto bg-[#F7F7F7] flex flex-col">
+              <div className="flex-1" />
+              <div className="px-4 pb-2 pt-3 space-y-1.5">
+                <AnimatePresence mode="popLayout">
+                  {filteredSuggestions.map((s, i) => (
+                    <motion.button
+                      key={s.text}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: i * 0.02 }}
+                      onClick={() => handleSuggestionClick(s)}
+                      className="w-full flex items-center gap-3 px-4 min-h-[48px] py-2.5 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
+                    >
+                      {phase === 'brand' && (
+                        <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
                           <img
-                            src={carBrands.find((b) => b.name === parsed?.brand)?.initial}
-                            alt={parsed?.brand}
-                            className="w-6 h-6 object-contain"
+                            src={carBrands.find((b) => s.text.includes(b.name))?.initial}
+                            alt=""
+                            className="w-4.5 h-4.5 object-contain"
                           />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-[#2D2D2D] font-medium">
-                            {parsed?.brand} {parsed?.model}
-                            {parsed?.year ? ` · ${parsed.year}` : ''}
-                            {parsed?.isBrandNew ? ' · New' : ''}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {parsed?.year ? 'Tap to get quotes instantly' : 'Tap to continue'}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      </motion.button>
-                    )}
+                      )}
+                      <span className="text-sm text-[#2D2D2D] flex-1">{s.text}</span>
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
 
-                    {/* Suggestions list */}
-                    {suggestions.length > 0 ? (
-                      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                        {suggestions.map((s, i) => (
-                          <button
-                            key={`${s.brand}-${s.model}`}
-                            onClick={() => handleSelectVehicle(s)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#F7F7F7] active:scale-[0.99] transition-all ${
-                              i > 0 ? 'border-t border-gray-50' : ''
-                            }`}
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
-                              <img src={s.logo} alt={s.brand} className="w-6 h-6 object-contain" />
-                            </div>
-                            <span className="text-sm text-[#2D2D2D] flex-1">{s.display}</span>
-                            <ChevronRight className="w-4 h-4 text-gray-300" />
-                          </button>
-                        ))}
-                      </div>
-                    ) : query.length === 0 ? (
-                      <div>
-                        <p className="text-xs text-gray-400 mb-2.5">Or pick a brand to get started</p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {popularBrands.map((brand) => (
-                            <button
-                              key={brand.id}
-                              onClick={() => setQuery(brand.name + ' ')}
-                              className="flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl bg-white border border-gray-100 hover:border-gray-300 active:scale-[0.97] transition-all"
-                            >
-                              <div className="w-8 h-8 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden">
-                                <img src={brand.initial} alt={brand.name} className="w-5 h-5 object-contain" />
-                              </div>
-                              <span className="text-xs text-[#2D2D2D] font-medium">{brand.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : !hasQuickMatch ? (
-                      <p className="text-xs text-gray-400 text-center py-3">No matches found</p>
-                    ) : null}
-                  </motion.div>
-                )}
-
-                {/* Step: Year selection */}
-                {step === 'year' && (
-                  <motion.div
-                    key="year-step"
-                    initial={{ opacity: 0, y: 10 }}
+                {/* Quick match for full parse */}
+                {phase === 'done' && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    onClick={() => handleSubmit()}
+                    className="w-full p-4 rounded-2xl bg-[#2D2D2D] text-left flex items-center gap-3 active:scale-[0.98] transition-all"
                   >
-                    <p className="text-sm text-[#2D2D2D] font-bold mb-3">Great choice! What year is your {selectedVehicle?.model}?</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {years.map((year) => (
-                        <button
-                          key={year}
-                          onClick={() => handleSelectYear(year)}
-                          className={`h-11 rounded-xl text-sm font-medium transition-all active:scale-[0.98] ${
-                            selectedYear === year
-                              ? 'bg-[#2D2D2D] text-[#D4D4D4]'
-                              : 'bg-white text-[#2D2D2D] border border-gray-100 hover:border-gray-200'
-                          }`}
-                        >
-                          {year}
-                        </button>
-                      ))}
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-5 h-5 text-[#D4D4D4]" />
                     </div>
-                  </motion.div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white font-medium">{query}</p>
+                      <p className="text-xs text-gray-400">Tap to get quotes instantly →</p>
+                    </div>
+                  </motion.button>
                 )}
+                <div ref={suggestionsEndRef} />
+              </div>
+            </div>
 
-                {/* Step: Brand new question */}
-                {step === 'brand-new' && (
-                  <motion.div
-                    key="brand-new-step"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    <p className="text-sm text-[#2D2D2D] font-bold mb-3">Almost there! Is your {selectedVehicle?.model} brand new?</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleBrandNew(true)}
-                        className={`flex-1 h-11 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                          isBrandNew === true
-                            ? 'bg-[#2D2D2D] text-[#D4D4D4]'
-                            : 'bg-white text-[#2D2D2D] border border-gray-100'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Yes, brand new
-                      </button>
-                      <button
-                        onClick={() => handleBrandNew(false)}
-                        className={`flex-1 h-11 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                          isBrandNew === false
-                            ? 'bg-[#2D2D2D] text-[#D4D4D4]'
-                            : 'bg-white text-[#2D2D2D] border border-gray-100'
-                        }`}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        No, pre-owned
-                      </button>
+            {/* Bottom sticky input — connected to suggestions */}
+            <div className="flex-shrink-0 bg-[#F7F7F7] px-4 pt-2 pb-8">
+              <div className="relative flex items-center gap-2">
+                <div className="relative flex-1">
+                  {/* Ghost autocomplete */}
+                  {ghost && query.length > 0 && (
+                    <div className="absolute inset-0 flex items-center px-4 pointer-events-none z-0">
+                      <span className="text-sm text-transparent">{query}</span>
+                      <span className="text-sm text-gray-300">{ghost.slice(query.length)}</span>
                     </div>
-                  </motion.div>
+                  )}
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => handleQueryChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="I have a Toyota Camry, 5 years old..."
+                    className="relative z-10 w-full h-14 px-4 rounded-2xl bg-white text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-gray-200 focus:border-[#2D2D2D] transition-colors"
+                  />
+                </div>
+                {query.trim() && (
+                  <motion.button
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    onClick={() => handleSubmit()}
+                    className="w-14 h-14 rounded-2xl bg-[#2D2D2D] flex items-center justify-center flex-shrink-0 active:scale-[0.95] transition-transform"
+                  >
+                    <SendHorizonal className="w-5 h-5 text-[#D4D4D4]" />
+                  </motion.button>
                 )}
-              </AnimatePresence>
+              </div>
+              {ghost && query.length > 0 && (
+                <p className="text-[10px] text-gray-400 mt-1.5 ml-1">Tab to autocomplete</p>
+              )}
             </div>
           </motion.div>
         )}

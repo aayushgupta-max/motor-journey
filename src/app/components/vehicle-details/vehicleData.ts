@@ -8,25 +8,27 @@ export interface CarBrand {
 }
 
 export const carBrands: CarBrand[] = [
+  // Most popular first (for home page grid display)
   { id: 1, name: 'Toyota', initial: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Toyota_EU.svg/960px-Toyota_EU.svg.png', bg: 'bg-[#FFE8E8]', accent: 'bg-[#E53935]', text: 'text-[#C62828]' },
-  { id: 2, name: 'BMW', initial: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/3840px-BMW.svg.png', bg: 'bg-[#E3F2FD]', accent: 'bg-[#1E88E5]', text: 'text-[#1565C0]' },
-  { id: 3, name: 'Mercedes', initial: 'https://rukminim2.flixcart.com/image/480/480/kh0vonk0-0/magnet/c/j/b/cnh-00825-mercedes-logo-badges-fridge-magnet-click-n-home-original-imafx4ssen56dccy.jpeg?q=90', bg: 'bg-[#F3E5F5]', accent: 'bg-[#8E24AA]', text: 'text-[#6A1B9A]' },
   { id: 4, name: 'Nissan', initial: 'https://thumbs.dreamstime.com/b/nissan-motor-company-ltd-trading-as-nissan-motor-corporation-often-shortened-to-nissan-japanese-multinational-204759382.jpg', bg: 'bg-[#FFF3E0]', accent: 'bg-[#FB8C00]', text: 'text-[#E65100]' },
   { id: 5, name: 'Honda', initial: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpoQhRH798FL1NPyETASXUpve_UWkjNA1YBQ&s', bg: 'bg-[#E8F5E9]', accent: 'bg-[#43A047]', text: 'text-[#2E7D32]' },
   { id: 6, name: 'Hyundai', initial: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQudO8lwJk7GmXxUvigoWkRaRItLyJVBxPt-g&s', bg: 'bg-[#E0F7FA]', accent: 'bg-[#00ACC1]', text: 'text-[#00838F]' },
+  { id: 3, name: 'Mercedes', initial: 'https://rukminim2.flixcart.com/image/480/480/kh0vonk0-0/magnet/c/j/b/cnh-00825-mercedes-logo-badges-fridge-magnet-click-n-home-original-imafx4ssen56dccy.jpeg?q=90', bg: 'bg-[#F3E5F5]', accent: 'bg-[#8E24AA]', text: 'text-[#6A1B9A]' },
+  { id: 2, name: 'BMW', initial: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/3840px-BMW.svg.png', bg: 'bg-[#E3F2FD]', accent: 'bg-[#1E88E5]', text: 'text-[#1565C0]' },
   { id: 7, name: 'Ford', initial: 'https://asilverliningfoundation.org/wp-content/uploads/2021/07/ford-logo.png.png', bg: 'bg-[#E8EAF6]', accent: 'bg-[#3949AB]', text: 'text-[#283593]' },
   { id: 8, name: 'Audi', initial: 'https://loodibee.com/wp-content/uploads/Audi-Logo-300x300.png', bg: 'bg-[#ECEFF1]', accent: 'bg-[#546E7A]', text: 'text-[#37474F]' },
 ];
 
 export const modelsByBrand: Record<string, string[]> = {
-  Toyota: ['Camry', 'Corolla', 'Land Cruiser', 'Yaris', 'RAV4', 'Hilux', 'Fortuner', 'Prado', 'Rush', 'Avalon', 'Supra', 'C-HR', 'Innova', 'Sequoia'],
-  BMW: ['3 Series', '5 Series', '7 Series', 'X1', 'X3', 'X5', 'X7', 'M3', 'M5', 'Z4', 'iX', 'i4', '4 Series', '8 Series'],
-  Mercedes: ['A-Class', 'C-Class', 'E-Class', 'S-Class', 'GLA', 'GLC', 'GLE', 'GLS', 'AMG GT', 'EQS', 'CLA', 'GLB'],
-  Nissan: ['Patrol', 'Altima', 'Sentra', 'Kicks', 'X-Trail', 'Pathfinder', 'Sunny', 'Maxima', '370Z', 'Navara', 'Juke', 'Magnite', 'Terrano', 'Qashqai'],
-  Honda: ['Civic', 'Accord', 'CR-V', 'HR-V', 'Pilot', 'City', 'Jazz', 'Odyssey', 'BR-V', 'WR-V'],
-  Hyundai: ['Tucson', 'Santa Fe', 'Elantra', 'Sonata', 'Creta', 'Kona', 'Palisade', 'Venue', 'Accent', 'i10', 'i20'],
-  Ford: ['Mustang', 'Explorer', 'Expedition', 'Edge', 'Bronco', 'F-150', 'Ranger', 'Escape', 'EcoSport', 'Territory'],
-  Audi: ['A3', 'A4', 'A6', 'A8', 'Q3', 'Q5', 'Q7', 'Q8', 'RS5', 'e-tron', 'TT', 'RS7'],
+  // Least popular → most popular per brand (bottom = most popular)
+  Toyota: ['Sequoia', 'Supra', 'Avalon', 'Rush', 'C-HR', 'Innova', 'RAV4', 'Hilux', 'Yaris', 'Fortuner', 'Prado', 'Land Cruiser', 'Corolla', 'Camry'],
+  BMW: ['Z4', 'iX', 'i4', '8 Series', '4 Series', 'M3', 'M5', 'X1', 'X7', '7 Series', 'X3', 'X5', '5 Series', '3 Series'],
+  Mercedes: ['EQS', 'AMG GT', 'CLA', 'GLB', 'A-Class', 'GLS', 'S-Class', 'GLA', 'E-Class', 'GLE', 'GLC', 'C-Class'],
+  Nissan: ['Terrano', 'Magnite', '370Z', 'Maxima', 'Juke', 'Navara', 'Qashqai', 'Pathfinder', 'Sentra', 'X-Trail', 'Kicks', 'Sunny', 'Altima', 'Patrol'],
+  Honda: ['WR-V', 'BR-V', 'Jazz', 'Odyssey', 'Pilot', 'HR-V', 'City', 'CR-V', 'Accord', 'Civic'],
+  Hyundai: ['i10', 'i20', 'Sonata', 'Kona', 'Palisade', 'Accent', 'Venue', 'Elantra', 'Creta', 'Santa Fe', 'Tucson'],
+  Ford: ['EcoSport', 'Edge', 'Escape', 'Bronco', 'Expedition', 'F-150', 'Territory', 'Ranger', 'Explorer', 'Mustang'],
+  Audi: ['TT', 'RS7', 'RS5', 'e-tron', 'A3', 'A8', 'Q8', 'Q3', 'A6', 'Q7', 'Q5', 'A4'],
 };
 
 export function getYearRange(): number[] {
@@ -48,7 +50,24 @@ export interface VehicleSuggestion {
 
 export function searchVehicles(query: string): VehicleSuggestion[] {
   if (!query.trim()) return [];
-  const q = query.toLowerCase().trim();
+
+  // Strip conversational prefixes for searching
+  const convPrefixes = [
+    'i have a ', 'i have an ', 'i drive a ', 'i drive an ',
+    'i own a ', 'i own an ', 'my car is a ', 'my car is an ',
+    "it's a ", 'its a ', 'i got a ', 'i got an ',
+    'my ', 'i have ', 'i drive ', 'i own ',
+  ];
+  let q = query.toLowerCase().trim();
+  for (const p of convPrefixes) {
+    if (q.startsWith(p)) {
+      q = q.slice(p.length).trim();
+      break;
+    }
+  }
+  // Also strip age/year phrases for search
+  q = q.replace(/(\d+)\s*(?:years?|yrs?)\s*(?:old)?/g, '').replace(/\bbrand\s*new\b/g, '').replace(/\bnew\b/g, '').replace(/\b(20\d{2})\b/g, '').replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  if (!q) return [];
   const results: VehicleSuggestion[] = [];
 
   for (const brand of carBrands) {
@@ -88,7 +107,23 @@ export function searchVehicles(query: string): VehicleSuggestion[] {
 
 export function parseVehicleInput(input: string): { brand?: string; model?: string; year?: number; isBrandNew?: boolean } {
   const currentYear = 2026;
-  const raw = input.trim().toLowerCase();
+
+  // Strip conversational prefixes
+  const convPrefixes = [
+    'i have a ', 'i have an ', 'i drive a ', 'i drive an ',
+    'i own a ', 'i own an ', 'my car is a ', 'my car is an ',
+    "it's a ", 'its a ', 'i got a ', 'i got an ',
+    'my ', 'i have ', 'i drive ', 'i own ',
+  ];
+  let stripped = input.trim().toLowerCase();
+  for (const p of convPrefixes) {
+    if (stripped.startsWith(p)) {
+      stripped = stripped.slice(p.length);
+      break;
+    }
+  }
+  const raw = stripped;
+
   let brand: string | undefined;
   let model: string | undefined;
   let year: number | undefined;
@@ -103,8 +138,10 @@ export function parseVehicleInput(input: string): { brand?: string; model?: stri
     }
   }
 
-  // Extract "brand new" / "new"
-  if (/\bbrand\s*new\b/.test(raw) || /\bnew\b/.test(raw)) {
+  // Extract "brand new" / "new" / "pre-owned"
+  if (/\bpre[-\s]?owned\b/.test(raw)) {
+    isBrandNew = false;
+  } else if (/\bbrand\s*new\b/.test(raw) || /\bnew\b/.test(raw)) {
     if (!year) year = currentYear;
     isBrandNew = true;
   }

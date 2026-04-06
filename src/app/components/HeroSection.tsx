@@ -11,7 +11,7 @@ export function HeroSection() {
       <div className="container mx-auto px-4 md:px-6 pt-5 pb-6 md:py-8 max-w-5xl">
         {/* Title */}
         <div className="text-center mb-5">
-          <h2 className="text-2xl md:text-3xl tracking-tight text-[#2D2D2D] mb-1 font-bold">
+          <h2 className="text-2xl md:text-3xl tracking-tight text-[#2D2D2D] mb-0 font-bold">
             Get your car <span className="text-[#888888]">insured</span>
           </h2>
           <p className="text-sm text-gray-500">
@@ -34,7 +34,7 @@ export function HeroSection() {
               </div>
 
               <div className="mb-4">
-                <h3 className="text-xl tracking-tight text-[#2D2D2D] mb-1 font-bold">
+                <h3 className="text-xl tracking-tight text-[#2D2D2D] mb-0 font-bold">
                   Upload Mulkiya
                 </h3>
                 <p className="text-sm text-[#2D2D2D]/60">

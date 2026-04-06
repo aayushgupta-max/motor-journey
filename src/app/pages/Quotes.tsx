@@ -193,24 +193,18 @@ export default function Quotes() {
             <p className="text-xs text-gray-500">Toyota Camry 2023 · Dubai</p>
           </div>
           <div className="ml-auto">
-            {unlocked && (
             <motion.div
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${allSurveyDone ? 'bg-[#EFEFEF]' : 'bg-[#F5F5F5]'}`}
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 0.3 }}
               key={answeredCount}
+              className="relative rounded-full p-[2px]"
+              style={{
+                background: `conic-gradient(#2D2D2D ${allSurveyDone ? 100 : ((8 + answeredCount) / 12) * 100}%, #D4D4D4 0%)`,
+              }}
             >
-              <ClipboardList className={`w-3 h-3 ${allSurveyDone ? 'text-[#2D2D2D]' : 'text-[#666666]'}`} />
-              <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#2D2D2D]' : 'text-[#666666]'}`}>{allSurveyDone ? 12 : 8 + answeredCount}/12</span>
-              <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${allSurveyDone ? 'bg-[#D4D4D4]' : 'bg-[#D4D4D4]'}`}
-                  initial={{ width: `${(8 / 12) * 100}%` }}
-                  animate={{ width: allSurveyDone ? '100%' : `${((8 + answeredCount) / 12) * 100}%` }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
-                />
-              </div>
-              {allSurveyDone && (
+              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${allSurveyDone ? 'bg-[#EFEFEF]' : 'bg-[#F5F5F5]'}`}>
+                <ClipboardList className={`w-3 h-3 ${allSurveyDone ? 'text-[#2D2D2D]' : 'text-[#666666]'}`} />
+                <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#2D2D2D]' : 'text-[#666666]'}`}>{allSurveyDone ? 12 : 8 + answeredCount}/12</span>
                 <button
                   onClick={() => {
                     setGccSelection(null);
@@ -226,19 +220,18 @@ export default function Quotes() {
                 >
                   <Pencil className="w-2.5 h-2.5 text-[#2D2D2D]" />
                 </button>
-              )}
+              </div>
             </motion.div>
-            )}
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 py-5 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-6 py-4 max-w-5xl">
         {/* Vehicle Summary Chip */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 bg-[#EFEFEF] rounded-xl p-3 mb-5"
+          className="flex items-center gap-3 bg-[#EFEFEF] rounded-xl p-3 mb-3"
         >
           <div className="w-10 h-10 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0">
             <Shield className="w-5 h-5 text-[#D4D4D4]" />
@@ -258,10 +251,10 @@ export default function Quotes() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="mb-5"
+          className="mb-3"
         >
           {/* Row 1: Icon buttons + expandable search */}
-          <div className="flex items-center gap-2 mb-2.5">
+          <div className="flex items-center gap-2 mb-2">
             {/* Full-width search input */}
             <div className="relative flex-1">
               <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -345,7 +338,7 @@ export default function Quotes() {
           </div>
 
           {/* Row 2: Quick filter suggestion chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
             {quickFilters.map((filter) => {
               const isActive = activeFilters.includes(filter);
               return (
@@ -372,16 +365,16 @@ export default function Quotes() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl overflow-hidden mb-4"
+          className="bg-white rounded-2xl overflow-hidden mb-3"
         >
           {/* Badge */}
-          <div className="bg-[#D4D4D4] px-5 py-2 flex items-center gap-2">
+          <div className="bg-[#D4D4D4] px-4 py-1.5 flex items-center gap-2">
             <Star className="w-3.5 h-3.5 text-[#2D2D2D]" />
             <span className="text-xs text-[#2D2D2D]">Best Value · Recommended for you</span>
           </div>
 
-          <div className="p-5">
-            <div className="flex items-start justify-between mb-4">
+          <div className="p-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -409,7 +402,7 @@ export default function Quotes() {
             </div>
 
             {/* Features */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-1.5 mb-3">
               {bestQuote.features.map((f) => (
                 <span key={f} className="inline-flex items-center gap-1 text-xs bg-[#F7F7F7] text-gray-600 px-2.5 py-1 rounded-lg">
                   <Check className="w-3 h-3 text-[#D4D4D4]" />
@@ -418,12 +411,19 @@ export default function Quotes() {
               ))}
             </div>
 
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="w-full h-11 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center gap-2 text-sm transition-all active:scale-[0.98]"
-            >
-              {allSurveyDone ? `Buy Now · AED ${bestQuote.price}/yr` : `Starting at AED ${bestQuote.price}/yr`}
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="h-10 px-4 rounded-xl border border-gray-200 text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
+              >
+                View details
+              </button>
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]"
+              >
+                <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${bestQuote.price}/yr` : `Starting at AED ${bestQuote.price}/yr`}</span>
+              </button>
+            </div>
           </div>
         </motion.div>
         )}
@@ -434,7 +434,7 @@ export default function Quotes() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="relative rounded-2xl p-[2px] mb-4 overflow-hidden"
+          className="relative rounded-2xl p-[2px] mb-3 overflow-hidden"
         >
           {/* Shooting star border */}
           <div
@@ -449,8 +449,8 @@ export default function Quotes() {
           <div className={`relative ${(8 + answeredCount) >= 12 ? 'bg-[#EFEFEF]' : 'bg-[#D9D9D9]'} rounded-[14px] p-4`}
         >
           <div className="flex items-start gap-3 mb-3">
-            <div className={`w-8 h-8 rounded-lg ${(8 + answeredCount) >= 12 ? 'bg-[#D4D4D4]' : 'bg-[#D4D4D4]'} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-              <AlertTriangle className={`w-4 h-4 ${(8 + answeredCount) >= 12 ? 'text-[#2D2D2D]' : 'text-[#666666]'}`} />
+            <div className="w-8 h-8 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertTriangle className="w-4 h-4 text-[#D4D4D4]" />
             </div>
             <div className="flex-1">
               <p className="text-sm text-[#2D2D2D] font-bold">Your premium can be optimized!</p>
@@ -685,7 +685,7 @@ export default function Quotes() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, padding: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-[#EFEFEF] rounded-2xl p-3 mb-4 flex items-center gap-3 overflow-hidden"
+            className="bg-[#EFEFEF] rounded-2xl p-3 mb-3 flex items-center gap-3 overflow-hidden"
           >
             <div className="w-8 h-8 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0">
               <Check className="w-4 h-4 text-[#D4D4D4]" />
@@ -701,14 +701,14 @@ export default function Quotes() {
         {/* Blurred Quotes with Login Wall */}
         <div className="relative">
           {/* Blurred cards */}
-          <div className={`space-y-3 ${!unlocked ? 'select-none pointer-events-none' : ''}`}>
+          <div className={`space-y-2.5 ${!unlocked ? 'select-none pointer-events-none' : ''}`}>
             {remainingQuotes.map((quote, i) => (
               <motion.div
                 key={quote.id}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.05 }}
-                className={`bg-white rounded-2xl p-5 ${!unlocked ? 'blur-[6px]' : ''}`}
+                className={`bg-white rounded-2xl p-4 ${!unlocked ? 'blur-[6px]' : ''}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -733,9 +733,14 @@ export default function Quotes() {
                   ))}
                 </div>
                 {unlocked && (
-                  <button className="w-full h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-sm mt-4 transition-all active:scale-[0.98]">
-                    Buy Now · AED {quote.price}/yr
-                  </button>
+                  <div className="flex gap-2 mt-3">
+                    <button className="h-10 px-4 rounded-xl border border-gray-200 text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
+                      View details
+                    </button>
+                    <button className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]">
+                      <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${quote.price}/yr` : `Starting at AED ${quote.price}/yr`}</span>
+                    </button>
+                  </div>
                 )}
               </motion.div>
             ))}

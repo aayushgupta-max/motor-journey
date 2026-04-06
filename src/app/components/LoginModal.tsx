@@ -75,12 +75,14 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
             >
               Send OTP
             </button>
-            <button
-              onClick={() => onUnlock()}
-              className="w-full text-center text-xs text-gray-500 hover:text-gray-600 transition-colors mt-3"
-            >
-              Submit without OTP
-            </button>
+            {quotesCount && (
+              <button
+                onClick={() => onUnlock()}
+                className="w-full text-center text-xs text-gray-500 hover:text-gray-600 transition-colors mt-3"
+              >
+                Submit without OTP
+              </button>
+            )}
           </>
         ) : (
           <>

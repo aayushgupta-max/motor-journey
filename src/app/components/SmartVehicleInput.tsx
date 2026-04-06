@@ -118,11 +118,20 @@ export function SmartVehicleInput() {
   // Auto-scroll suggestions to bottom so last items show first
   useEffect(() => {
     if (expanded && scrollAreaRef.current) {
-      setTimeout(() => {
+      // Immediate scroll
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      // Also scroll after AnimatePresence exit+enter animations complete
+      const t1 = setTimeout(() => {
         if (scrollAreaRef.current) {
           scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
         }
-      }, 50);
+      }, 100);
+      const t2 = setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      }, 400);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [expanded, phase]);
 

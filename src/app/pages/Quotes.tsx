@@ -199,6 +199,7 @@ export default function Quotes() {
             <p className="text-sm text-[#2D2D2D]">Your Quotes</p>
             <p className="text-xs text-gray-500">Toyota Camry 2023 · Dubai</p>
           </div>
+          {isLoggedIn && (
           <div className="ml-auto">
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
@@ -230,6 +231,7 @@ export default function Quotes() {
               </div>
             </motion.div>
           </div>
+          )}
         </div>
       </div>
 
@@ -253,7 +255,7 @@ export default function Quotes() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search insurer..."
-                className={`w-full h-10 pl-8.5 pr-8 rounded-xl bg-white text-xs text-[#2D2D2D] placeholder-gray-300 outline-none border ${searchQuery ? 'border-[#D4D4D4]' : 'border-gray-100'}`}
+                className={`w-full h-10 pl-8.5 pr-8 rounded-xl bg-white text-xs text-[#2D2D2D] placeholder-gray-300 outline-none border ${searchQuery ? 'border-[#D4D4D4]' : 'border-gray-200/60'}`}
               />
               {searchQuery && (
                 <button
@@ -269,7 +271,7 @@ export default function Quotes() {
             <button
               onClick={() => setShowAllFilters(true)}
               className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${
-                activeFilters.length > 0 ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-white text-gray-500 border border-gray-100'
+                activeFilters.length > 0 ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-white text-gray-500 border border-gray-200/60'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -285,7 +287,7 @@ export default function Quotes() {
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  sortBy !== 'price-low' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-white text-gray-500 border border-gray-100'
+                  sortBy !== 'price-low' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-white text-gray-500 border border-gray-200/60'
                 }`}
               >
                 <ArrowUpDown className="w-4 h-4" />
@@ -349,8 +351,8 @@ export default function Quotes() {
         </motion.div>
         )}
 
-        {/* Quote Confidence Card */}
-        <QuoteConfidenceCard
+        {/* Quote Confidence Card — only for logged-in users */}
+        {isLoggedIn && <QuoteConfidenceCard
           quotesCount={quotes.length}
           plansCount={allFiltered.length}
           answeredCount={answeredCount}
@@ -370,7 +372,7 @@ export default function Quotes() {
           setHasNoClaimProof={setHasNoClaimProof}
           surveyStep={surveyStep}
           setSurveyStep={setSurveyStep}
-        />
+        />}
 
         {/* Best Quote - Fully Visible */}
         {bestQuote && (
@@ -378,7 +380,7 @@ export default function Quotes() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl overflow-hidden mb-3"
+          className="bg-white rounded-2xl overflow-hidden mb-3 border border-gray-200/60"
         >
           {/* Badge */}
           <div className="bg-[#D4D4D4] px-4 py-1.5 flex items-center gap-2">
@@ -451,7 +453,7 @@ export default function Quotes() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.05 }}
-                className={`bg-white rounded-2xl p-4 ${!unlocked ? 'blur-[6px]' : ''}`}
+                className={`bg-white rounded-2xl p-4 border border-gray-200/60 ${!unlocked ? 'blur-[6px]' : ''}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">

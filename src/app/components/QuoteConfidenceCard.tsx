@@ -89,29 +89,9 @@ export function QuoteConfidenceCard({
             : 'linear-gradient(135deg, #E8E8E8 0%, #CFCFCF 100%)',
         }}
       >
-        {/* Header: Icon + Text + Confidence Ring */}
+        {/* Header: Confidence Ring + Text */}
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-[10px] bg-[#2D2D2D] flex items-center justify-center flex-shrink-0">
-            {allSurveyDone ? (
-              <Check className="w-4.5 h-4.5 text-[#D4D4D4]" />
-            ) : (
-              <AlertTriangle className="w-4.5 h-4.5 text-[#D4D4D4]" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-[#2D2D2D]">
-              {allSurveyDone ? 'Best price unlocked' : 'Low confidence premiums'}
-            </p>
-            <p className="text-xs text-[#2D2D2D]/70 leading-tight mt-0.5">
-              {allSurveyDone
-                ? 'Your quotes are now fully personalized'
-                : remaining === 1
-                  ? 'Last question to unlock better rates'
-                  : `Answer ${remaining} quick questions to unlock better rates`}
-            </p>
-          </div>
-
-          {/* Confidence Ring */}
+          {/* Confidence Ring as primary icon */}
           <div className="flex-shrink-0">
             <div className="relative" style={{ width: 48, height: 48 }}>
               <svg width={48} height={48} className="-rotate-90">
@@ -128,17 +108,36 @@ export function QuoteConfidenceCard({
                   transition={{ duration: 0.6, ease: 'easeOut' }}
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.span
-                  key={confidencePct}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-[12px] font-bold text-[#2D2D2D]"
-                >
-                  {confidencePct}%
-                </motion.span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                {allSurveyDone ? (
+                  <Check className="w-5 h-5 text-[#2D2D2D]" />
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3 h-3 text-[#2D2D2D]/60 fill-[#2D2D2D]/60" />
+                    <motion.span
+                      key={confidencePct}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-[10px] font-bold text-[#2D2D2D] leading-none mt-0.5"
+                    >
+                      {confidencePct}%
+                    </motion.span>
+                  </>
+                )}
               </div>
             </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-[#2D2D2D]">
+              {allSurveyDone ? 'Best price unlocked' : 'Low Quote Confidence Score'}
+            </p>
+            <p className="text-xs text-[#2D2D2D]/70 leading-tight mt-0.5">
+              {allSurveyDone
+                ? 'Your quotes are now fully personalized'
+                : remaining === 1
+                  ? 'Last question to unlock better rates'
+                  : `Answer ${remaining} quick questions to unlock better rates`}
+            </p>
           </div>
         </div>
 

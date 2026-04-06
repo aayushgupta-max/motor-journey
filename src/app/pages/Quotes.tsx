@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Header } from '../components/Header';
-import { ArrowLeft, Shield, Star, Check, Lock, X, Eye, EyeOff, AlertTriangle, ClipboardList, Upload, FileText, Calendar, ShieldCheck, Pencil } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { ArrowLeft, Star, Check, Lock, X, Eye, EyeOff, ClipboardList, Pencil } from 'lucide-react';
+import { motion } from 'motion/react';
 import { SlidersHorizontal, ArrowUpDown, ChevronDown, Search } from 'lucide-react';
 import { DLUploadBottomSheet } from '../components/DLUploadBottomSheet';
 import { LoginModal } from '../components/LoginModal';
 import { AiAssistantButton } from '../components/AiAssistantButton';
+import { QuoteConfidenceCard } from '../components/QuoteConfidenceCard';
 
 const allFilterOptions = [
   { label: 'Comprehensive', category: 'Coverage' },
@@ -113,11 +114,12 @@ export default function Quotes() {
   const [hasNoClaimProof, setHasNoClaimProof] = useState<'yes' | 'no' | null>(null);
   const [surveyStep, setSurveyStep] = useState(0); // 0=gcc+dl, 1=claim months, 2=no claim proof, 3=dl retry (if skipped)
 
-  const totalQuestions = 4;
-  const answeredCount = (gccSelection !== null ? 1 : 0) + (dlUploaded ? 1 : 0) + (claimMonths !== null ? 1 : 0) + (hasNoClaimProof !== null ? 1 : 0);
+  const noClaimProofNeeded = claimMonths === 'Never claimed';
+  const totalQuestions = noClaimProofNeeded ? 4 : 3;
+  const answeredCount = (gccSelection !== null ? 1 : 0) + (dlUploaded ? 1 : 0) + (claimMonths !== null ? 1 : 0) + (noClaimProofNeeded && hasNoClaimProof !== null ? 1 : 0);
   const allSurveyDone = dlSkipped
-    ? answeredCount >= totalQuestions
-    : (gccSelection !== null && dlUploaded && claimMonths !== null && hasNoClaimProof !== null);
+    ? gccSelection !== null && claimMonths !== null && (!noClaimProofNeeded || hasNoClaimProof !== null)
+    : gccSelection !== null && dlUploaded && claimMonths !== null && (!noClaimProofNeeded || hasNoClaimProof !== null);
   const [surveyBadgeDismissed, setSurveyBadgeDismissed] = useState(false);
 
   useEffect(() => {
@@ -227,23 +229,6 @@ export default function Quotes() {
       </div>
 
       <div className="container mx-auto px-4 md:px-6 py-4 max-w-5xl">
-        {/* Vehicle Summary Chip */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 bg-[#EFEFEF] rounded-xl p-3 mb-3"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5 text-[#D4D4D4]" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-[#2D2D2D]">We found {quotes.length} quotes for you</p>
-            <p className="text-xs text-[#2D2D2D]/50">Based on your Mulkiya details</p>
-          </div>
-          <span className="text-xs bg-[#2D2D2D] text-[#D4D4D4] px-2.5 py-1 rounded-full">
-            {allFiltered.length} plans
-          </span>
-        </motion.div>
 
         {/* Filter & Sort Bar */}
         {unlocked && (
@@ -359,6 +344,29 @@ export default function Quotes() {
         </motion.div>
         )}
 
+        {/* Quote Confidence Card */}
+        <QuoteConfidenceCard
+          quotesCount={quotes.length}
+          plansCount={allFiltered.length}
+          answeredCount={answeredCount}
+          totalDataPoints={12}
+          allSurveyDone={allSurveyDone}
+          gccSelection={gccSelection}
+          setGccSelection={setGccSelection}
+          showDLUpload={showDLUpload}
+          setShowDLUpload={setShowDLUpload}
+          dlUploaded={dlUploaded}
+          dlSkipped={dlSkipped}
+          setDlSkipped={setDlSkipped}
+          setShowDLSheet={setShowDLSheet}
+          claimMonths={claimMonths}
+          setClaimMonths={setClaimMonths}
+          hasNoClaimProof={hasNoClaimProof}
+          setHasNoClaimProof={setHasNoClaimProof}
+          surveyStep={surveyStep}
+          setSurveyStep={setSurveyStep}
+        />
+
         {/* Best Quote - Fully Visible */}
         {bestQuote && (
         <motion.div
@@ -383,7 +391,7 @@ export default function Quotes() {
                   <span className="text-sm" style={{ color: bestQuote.color }}>{bestQuote.initial}</span>
                 </div>
                 <div>
-                  <p className="text-sm text-[#2D2D2D]">{bestQuote.provider}</p>
+                  <p className="text-sm font-bold text-[#2D2D2D]">{bestQuote.provider}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <Star className="w-3 h-3 text-gray-500 fill-gray-400" />
                     <span className="text-xs text-gray-500">{bestQuote.rating}</span>
@@ -394,7 +402,7 @@ export default function Quotes() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500 line-through">AED {bestQuote.originalPrice}</p>
-                <p className="text-xl text-[#2D2D2D]">AED {bestQuote.price}</p>
+                <p className="text-lg font-bold text-[#2D2D2D]">AED {bestQuote.price}</p>
                 <p className="text-[10px] text-[#D4D4D4] bg-[#2D2D2D] px-2 py-0.5 rounded-full mt-1 inline-block">
                   Save {Math.round(((bestQuote.originalPrice - bestQuote.price) / bestQuote.originalPrice) * 100)}%
                 </p>
@@ -413,7 +421,7 @@ export default function Quotes() {
 
             <div className="flex gap-2">
               <button
-                className="h-10 px-4 rounded-xl border border-gray-200 text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
+                className="h-10 px-4 rounded-xl bg-[#F0F0F0] text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
               >
                 View details
               </button>
@@ -426,276 +434,6 @@ export default function Quotes() {
             </div>
           </div>
         </motion.div>
-        )}
-
-        {/* Premium Optimization Survey Card - After Best Quote */}
-        {unlocked && !allSurveyDone && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="relative rounded-2xl p-[2px] mb-3 overflow-hidden"
-        >
-          {/* Shooting star border */}
-          <div
-            className="absolute inset-0 rounded-2xl"
-            style={{
-              background: (8 + answeredCount) >= 12
-                ? 'conic-gradient(from var(--border-angle, 0deg), transparent 60%, #D4D4D4 78%, #2E7D32 82%, #D4D4D4 86%, transparent 95%)'
-                : 'conic-gradient(from var(--border-angle, 0deg), transparent 60%, #D4D4D4 78%, #666666 82%, #D4D4D4 86%, transparent 95%)',
-              animation: 'shooting-star-spin 3s linear infinite',
-            }}
-          />
-          <div className={`relative ${(8 + answeredCount) >= 12 ? 'bg-[#EFEFEF]' : 'bg-[#D9D9D9]'} rounded-[14px] p-4`}
-        >
-          <div className="flex items-start gap-3 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0 mt-0.5">
-              <AlertTriangle className="w-4 h-4 text-[#D4D4D4]" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-[#2D2D2D] font-bold">Your premium can be optimized!</p>
-              <p className="text-xs text-[#2D2D2D]/50 mt-0.5">Answer quick questions to get a better rate</p>
-            </div>
-            <span className={`text-[10px] ${(8 + answeredCount) >= 12 ? 'text-[#2D2D2D] bg-[#D4D4D4]/50' : 'text-[#666666] bg-[#D4D4D4]/50'} px-2 py-0.5 rounded-full flex-shrink-0`}>
-              {answeredCount}/{totalQuestions}
-            </span>
-          </div>
-
-          {/* Answered summary chips */}
-          {gccSelection !== null && surveyStep > 0 && (
-            <div className="flex items-center gap-2 bg-white/60 rounded-lg px-3 py-2 mb-2">
-              <Check className="w-3 h-3 text-[#D4D4D4]" />
-              <span className="text-[11px] text-[#2D2D2D]">Car spec: {gccSelection === 'yes' ? 'GCC' : 'Non-GCC'}</span>
-              {dlUploaded && (
-                <>
-                  <span className="text-[11px] text-[#2D2D2D]/30">·</span>
-                  <span className="text-[11px] text-[#2D2D2D]">DL uploaded</span>
-                </>
-              )}
-              {claimMonths !== null && surveyStep > 1 && (
-                <>
-                  <span className="text-[11px] text-[#2D2D2D]/30">·</span>
-                  <span className="text-[11px] text-[#2D2D2D]">{claimMonths} claim-free</span>
-                </>
-              )}
-            </div>
-          )}
-
-          <AnimatePresence mode="wait">
-            {/* Q1: GCC Spec with flip to DL Upload */}
-            {surveyStep === 0 && (
-              <motion.div
-                key="q1-gcc"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <div className="relative bg-white rounded-xl" style={{ perspective: '800px' }}>
-                  <motion.div
-                    animate={{ rotateX: showDLUpload ? 180 : 0 }}
-                    transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-                    style={{ transformStyle: 'preserve-3d' }}
-                    className="relative"
-                  >
-                    {/* Front: GCC Question */}
-                    <div
-                      className={`p-4 ${showDLUpload ? 'absolute inset-0' : 'relative'}`}
-                      style={{ backfaceVisibility: 'hidden' }}
-                    >
-                      <p className="text-sm text-[#2D2D2D] mb-3">Is your car GCC spec or Non-GCC?</p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setGccSelection('yes');
-                            setTimeout(() => setShowDLUpload(true), 400);
-                          }}
-                          className={`flex-1 h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                            gccSelection === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
-                          }`}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          GCC Spec
-                        </button>
-                        <button
-                          onClick={() => {
-                            setGccSelection('no');
-                            setTimeout(() => setShowDLUpload(true), 400);
-                          }}
-                          className={`flex-1 h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                            gccSelection === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
-                          }`}
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          Non-GCC
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Back: DL Upload */}
-                    <div
-                      className={`p-4 flex flex-col items-center justify-center ${showDLUpload ? 'relative' : 'absolute inset-0'}`}
-                      style={{ backfaceVisibility: 'hidden', transform: 'rotateX(180deg)' }}
-                    >
-                      <div className="w-12 h-12 rounded-2xl bg-[#EFEFEF] flex items-center justify-center mb-3">
-                        <Upload className="w-5 h-5 text-[#2D2D2D]" />
-                      </div>
-                      <p className="text-sm text-[#2D2D2D] mb-1">Upload your Driving License</p>
-                      <p className="text-[11px] text-[#2D2D2D]/40 mb-4">We'll auto-fill your details instantly</p>
-                      <div className="flex gap-2 w-full">
-                        <button
-                          onClick={() => setShowDLSheet(true)}
-                          className="flex-1 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          Upload DL
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDlSkipped(true);
-                            setSurveyStep(1);
-                          }}
-                          className="flex-1 h-10 rounded-xl bg-[#F7F7F7] text-[#2D2D2D]/60 text-sm transition-all active:scale-[0.98] flex items-center justify-center"
-                        >
-                          Skip
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Q3: How many months since last claim */}
-            {surveyStep === 1 && (
-              <motion.div
-                key="q3-claim-months"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="bg-white rounded-xl p-4"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-[#2D2D2D]/40" />
-                  <p className="text-sm text-[#2D2D2D]">How long since your last claim?</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Never claimed', '12+ months', '6–12 months', 'Less than 6 months'].map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => {
-                        setClaimMonths(opt);
-                        setTimeout(() => setSurveyStep(2), 300);
-                      }}
-                      className={`h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center ${
-                        claimMonths === opt ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Q4: Proof of no claim */}
-            {surveyStep === 2 && (
-              <motion.div
-                key="q4-no-claim-proof"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="bg-white rounded-xl p-4"
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <ShieldCheck className="w-4 h-4 text-[#2D2D2D]/40" />
-                  <p className="text-sm text-[#2D2D2D]">Do you have a No Claim Certificate?</p>
-                </div>
-                <p className="text-[11px] text-[#2D2D2D]/40 mb-3 ml-6">This can reduce your premium by up to 25%</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setHasNoClaimProof('yes');
-                      if (dlSkipped) setTimeout(() => setSurveyStep(3), 300);
-                    }}
-                    className={`flex-1 h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                      hasNoClaimProof === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
-                    }`}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Yes, I have it
-                  </button>
-                  <button
-                    onClick={() => {
-                      setHasNoClaimProof('no');
-                      if (dlSkipped) setTimeout(() => setSurveyStep(3), 300);
-                    }}
-                    className={`flex-1 h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                      hasNoClaimProof === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
-                    }`}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    No
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Q5 (deferred): DL Upload retry - only if skipped earlier */}
-            {surveyStep === 3 && (
-              <motion.div
-                key="q5-dl-retry"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="bg-white rounded-xl p-4 flex flex-col items-center justify-center"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-[#F5F5F5] flex items-center justify-center mb-3">
-                  <Upload className="w-5 h-5 text-[#666666]" />
-                </div>
-                <p className="text-sm text-[#2D2D2D] mb-1">Last step — Upload your Driving License</p>
-                <p className="text-[11px] text-[#2D2D2D]/40 mb-4">Get more accurate quotes with your DL details</p>
-                <div className="flex gap-2 w-full">
-                  <button
-                    onClick={() => setShowDLSheet(true)}
-                    className="flex-1 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    Upload DL
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDlSkipped(false);
-                    }}
-                    className="flex-1 h-10 rounded-xl bg-[#F7F7F7] text-[#2D2D2D]/60 text-sm transition-all active:scale-[0.98] flex items-center justify-center"
-                  >
-                    Skip for now
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          </div>
-        </motion.div>
-        )}
-
-        {/* Survey Complete Badge */}
-        {unlocked && allSurveyDone && !surveyBadgeDismissed && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, padding: 0 }}
-            transition={{ duration: 0.4 }}
-            className="bg-[#EFEFEF] rounded-2xl p-3 mb-3 flex items-center gap-3 overflow-hidden"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0">
-              <Check className="w-4 h-4 text-[#D4D4D4]" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-[#2D2D2D]">All questions answered!</p>
-              <p className="text-[10px] text-[#2D2D2D]/50">Your quotes are fully optimized</p>
-            </div>
-            <span className="text-[10px] text-[#2D2D2D] bg-[#D4D4D4]/50 px-2 py-0.5 rounded-full">{totalQuestions}/{totalQuestions}</span>
-          </motion.div>
         )}
 
         {/* Blurred Quotes with Login Wall */}
@@ -719,12 +457,12 @@ export default function Quotes() {
                       <span className="text-sm" style={{ color: quote.color }}>{quote.initial}</span>
                     </div>
                     <div>
-                      <p className="text-sm text-[#2D2D2D]">{quote.provider}</p>
+                      <p className="text-sm font-bold text-[#2D2D2D]">{quote.provider}</p>
                       <p className="text-xs text-gray-500">{quote.coverage}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl text-[#2D2D2D]">AED {quote.price}</p>
+                    <p className="text-lg font-bold text-[#2D2D2D]">AED {quote.price}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -734,7 +472,7 @@ export default function Quotes() {
                 </div>
                 {unlocked && (
                   <div className="flex gap-2 mt-3">
-                    <button className="h-10 px-4 rounded-xl border border-gray-200 text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
+                    <button className="h-10 px-4 rounded-xl bg-[#F0F0F0] text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
                       View details
                     </button>
                     <button className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]">

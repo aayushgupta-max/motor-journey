@@ -49,8 +49,8 @@ export function DLUploadBottomSheet({ open, onOpenChange, onComplete }: DLUpload
             <div className="px-5 pb-8 pt-2">
               <div className="flex items-center justify-between mb-1">
                 <div>
-                  <h3 className="text-lg tracking-tight text-[#163300]">Upload Driving License</h3>
-                  <p className="text-sm text-gray-400">Front and back side required</p>
+                  <h3 className="text-lg tracking-tight text-[#2D2D2D]">Upload Driving License</h3>
+                  <p className="text-sm text-gray-500">Front and back side required</p>
                 </div>
                 <button
                   onClick={() => onOpenChange(false)}
@@ -61,8 +61,8 @@ export function DLUploadBottomSheet({ open, onOpenChange, onComplete }: DLUpload
               </div>
 
               <div className="flex items-center gap-2 my-5">
-                <div className={`flex-1 h-1 rounded-full transition-colors ${frontFile ? 'bg-[#9FE870]' : 'bg-gray-100'}`} />
-                <div className={`flex-1 h-1 rounded-full transition-colors ${backFile ? 'bg-[#9FE870]' : 'bg-gray-100'}`} />
+                <div className={`flex-1 h-1 rounded-full transition-colors ${frontFile ? 'bg-[#D4D4D4]' : 'bg-gray-100'}`} />
+                <div className={`flex-1 h-1 rounded-full transition-colors ${backFile ? 'bg-[#D4D4D4]' : 'bg-gray-100'}`} />
               </div>
 
               <div className="space-y-3 mb-6">
@@ -84,7 +84,7 @@ export function DLUploadBottomSheet({ open, onOpenChange, onComplete }: DLUpload
                 />
               </div>
 
-              <div className="bg-[#F7F7F0] rounded-xl p-3 mb-5 flex items-start gap-3">
+              <div className="bg-[#F5F5F5] rounded-xl p-3 mb-5 flex items-start gap-3">
                 <span className="text-lg">💡</span>
                 <p className="text-xs text-gray-500 leading-relaxed">
                   Make sure the photo is clear and all text is readable. We'll auto-fill your driving details.
@@ -96,13 +96,13 @@ export function DLUploadBottomSheet({ open, onOpenChange, onComplete }: DLUpload
                 onClick={handleContinue}
                 className={`w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm transition-all ${
                   bothUploaded
-                    ? 'bg-[#163300] text-[#9FE870] active:scale-[0.98]'
+                    ? 'bg-[#2D2D2D] text-[#D4D4D4] active:scale-[0.98]'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 }`}
               >
                 {processing ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-[#9FE870]/30 border-t-[#9FE870] rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-[#D4D4D4]/30 border-t-[#D4D4D4] rounded-full animate-spin" />
                     Processing License...
                   </>
                 ) : (
@@ -137,7 +137,7 @@ function UploadCard({
 }) {
   return (
     <div className={`rounded-xl border-2 border-dashed transition-colors ${
-      file ? 'border-[#9FE870] bg-[#F4FFEB]' : 'border-gray-200 bg-[#FAFAFA]'
+      file ? 'border-[#D4D4D4] bg-[#FAFAFA]' : 'border-gray-200 bg-[#FAFAFA]'
     }`}>
       <input
         type="file"
@@ -153,27 +153,27 @@ function UploadCard({
             <ImageIcon className="w-5 h-5 text-gray-300" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-[#163300]">{label}</p>
-            <p className="text-xs text-gray-400">{sublabel}</p>
+            <p className="text-sm text-[#2D2D2D]">{label}</p>
+            <p className="text-xs text-gray-500">{sublabel}</p>
           </div>
-          <div className="w-9 h-9 rounded-lg bg-[#163300] flex items-center justify-center flex-shrink-0">
-            <Camera className="w-4 h-4 text-[#9FE870]" />
+          <div className="w-9 h-9 rounded-lg bg-[#2D2D2D] flex items-center justify-center flex-shrink-0">
+            <Camera className="w-4 h-4 text-[#D4D4D4]" />
           </div>
         </label>
       ) : (
         <div className="flex items-center gap-4 p-4">
-          <div className="w-12 h-12 rounded-xl bg-[#9FE870] flex items-center justify-center flex-shrink-0">
-            <Check className="w-5 h-5 text-[#163300]" />
+          <div className="w-12 h-12 rounded-xl bg-[#D4D4D4] flex items-center justify-center flex-shrink-0">
+            <Check className="w-5 h-5 text-[#2D2D2D]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-[#163300]">{label}</p>
-            <p className="text-xs text-gray-400 truncate">{file.name}</p>
+            <p className="text-sm text-[#2D2D2D]">{label}</p>
+            <p className="text-xs text-gray-500 truncate">{file.name}</p>
           </div>
           <button
             onClick={onClear}
             className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0"
           >
-            <X className="w-3 h-3 text-gray-400" />
+            <X className="w-3 h-3 text-gray-500" />
           </button>
         </div>
       )}

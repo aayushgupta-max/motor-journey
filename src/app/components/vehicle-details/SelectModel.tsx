@@ -16,10 +16,10 @@ export function SelectModel({ brandName, models, onSelect }: SelectModelProps) {
 
   return (
     <div className="px-5 pt-2 pb-6">
-      <h2 className="text-xl tracking-tight text-[#163300] font-bold mb-0.5">
+      <h2 className="text-xl tracking-tight text-[#2D2D2D] font-bold mb-0.5">
         Select Model
       </h2>
-      <p className="text-sm text-gray-400 mb-4">
+      <p className="text-sm text-gray-500 mb-4">
         Choose your {brandName} model
       </p>
 
@@ -31,7 +31,7 @@ export function SelectModel({ brandName, models, onSelect }: SelectModelProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search models..."
-          className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#F7F7F7] text-sm text-[#163300] placeholder-gray-300 outline-none border border-transparent focus:border-[#9FE870] transition-colors"
+          className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#F7F7F7] text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-transparent focus:border-[#D4D4D4] transition-colors"
         />
       </div>
 
@@ -48,7 +48,7 @@ export function SelectModel({ brandName, models, onSelect }: SelectModelProps) {
               onClick={() => onSelect(model)}
               className="w-full text-left px-4 py-3.5 flex items-center justify-between rounded-xl hover:bg-[#F7F7F7] active:scale-[0.98] transition-all"
             >
-              <span className="text-sm text-[#163300]">{model}</span>
+              <span className="text-sm text-[#2D2D2D]">{model}</span>
               <ChevronRight className="w-4 h-4 text-gray-300" />
             </button>
           ))

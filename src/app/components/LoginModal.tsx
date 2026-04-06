@@ -21,21 +21,21 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
         </div>
 
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg text-[#163300]">
+          <h3 className="text-lg text-[#2D2D2D]">
             {step === 'phone' ? 'Sign in' : 'Enter OTP'}
           </h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center">
-            <X className="w-4 h-4 text-gray-400" />
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         {step === 'phone' ? (
           <>
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-gray-500 mb-4">
               Enter your UAE mobile number to continue
             </p>
             <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 px-3 rounded-xl bg-[#F7F7F7] flex items-center gap-1.5 text-sm text-[#163300]">
+              <div className="h-12 px-3 rounded-xl bg-[#F7F7F7] flex items-center gap-1.5 text-sm text-[#2D2D2D]">
                 🇦🇪 +971
               </div>
               <input
@@ -43,7 +43,7 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="50 123 4567"
-                className="flex-1 h-12 px-4 rounded-xl bg-[#F7F7F7] text-sm text-[#163300] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#9FE870]"
+                className="flex-1 h-12 px-4 rounded-xl bg-[#F7F7F7] text-sm text-[#2D2D2D] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#D4D4D4]"
               />
             </div>
             <button
@@ -51,7 +51,7 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
               disabled={phone.length < 7}
               className={`w-full h-12 rounded-xl flex items-center justify-center text-sm transition-all ${
                 phone.length >= 7
-                  ? 'bg-[#163300] text-[#9FE870] active:scale-[0.98]'
+                  ? 'bg-[#2D2D2D] text-[#D4D4D4] active:scale-[0.98]'
                   : 'bg-gray-100 text-gray-300 cursor-not-allowed'
               }`}
             >
@@ -59,14 +59,14 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
             </button>
             <button
               onClick={() => onUnlock()}
-              className="w-full text-center text-xs text-gray-400 hover:text-gray-600 transition-colors mt-3"
+              className="w-full text-center text-xs text-gray-500 hover:text-gray-600 transition-colors mt-3"
             >
               Submit without OTP
             </button>
           </>
         ) : (
           <>
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-gray-500 mb-4">
               We sent a 4-digit code to +971 {phone}
             </p>
             <input
@@ -75,14 +75,14 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder="• • • •"
               maxLength={4}
-              className="w-full h-14 text-center text-2xl tracking-[0.5em] rounded-xl bg-[#F7F7F7] text-[#163300] placeholder-gray-200 outline-none focus:ring-2 focus:ring-[#9FE870] mb-4"
+              className="w-full h-14 text-center text-2xl tracking-[0.5em] rounded-xl bg-[#F7F7F7] text-[#2D2D2D] placeholder-gray-200 outline-none focus:ring-2 focus:ring-[#D4D4D4] mb-4"
             />
             <button
               onClick={() => onUnlock()}
               disabled={otp.length < 4}
               className={`w-full h-12 rounded-xl flex items-center justify-center text-sm transition-all ${
                 otp.length >= 4
-                  ? 'bg-[#163300] text-[#9FE870] active:scale-[0.98]'
+                  ? 'bg-[#2D2D2D] text-[#D4D4D4] active:scale-[0.98]'
                   : 'bg-gray-100 text-gray-300 cursor-not-allowed'
               }`}
             >
@@ -90,7 +90,7 @@ export function LoginModal({ onClose, onUnlock }: { onClose: () => void; onUnloc
             </button>
             <button
               onClick={() => setStep('phone')}
-              className="w-full text-center text-xs text-gray-400 mt-3 hover:text-gray-600"
+              className="w-full text-center text-xs text-gray-500 mt-3 hover:text-gray-600"
             >
               Change number
             </button>

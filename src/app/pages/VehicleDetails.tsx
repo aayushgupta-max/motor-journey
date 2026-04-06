@@ -88,7 +88,7 @@ export default function VehicleDetails() {
             onClick={handleBack}
             className="w-9 h-9 rounded-full bg-[#F7F7F7] flex items-center justify-center flex-shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 text-[#163300]" />
+            <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {selectedBrand && currentStep > 0 && (
@@ -100,11 +100,11 @@ export default function VehicleDetails() {
                 />
               </div>
             )}
-            <span className="text-sm font-medium text-[#163300] truncate">
+            <span className="text-sm font-medium text-[#2D2D2D] truncate">
               {headerTitle}
             </span>
           </div>
-          <span className="text-xs text-gray-400 flex-shrink-0">
+          <span className="text-xs text-gray-500 flex-shrink-0">
             Step {moreBrands ? currentStep + 1 : currentStep} of {totalSteps}
           </span>
         </div>
@@ -112,7 +112,7 @@ export default function VehicleDetails() {
         {/* Progress bar */}
         <div className="h-1 bg-gray-100">
           <div
-            className="h-full bg-[#9FE870] transition-all duration-300 ease-out"
+            className="h-full bg-[#D4D4D4] transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -173,10 +173,10 @@ export default function VehicleDetails() {
 
       {/* Mulkiya fasttrack */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 px-5 py-3">
-        <p className="text-xs text-gray-400 text-center mb-2">Get more accurate quotes!</p>
+        <p className="text-xs text-gray-500 text-center mb-2">Get more accurate quotes!</p>
         <button
           onClick={() => setSheetOpen(true)}
-          className="w-full h-11 rounded-xl bg-[#F7F7F7] text-[#163300] flex items-center justify-center gap-2 text-sm font-medium active:scale-[0.98] transition-all"
+          className="w-full h-11 rounded-xl bg-[#F7F7F7] text-[#2D2D2D] flex items-center justify-center gap-2 text-sm font-medium active:scale-[0.98] transition-all"
         >
           <Upload className="w-4 h-4" />
           Upload Mulkiya to fast-track

@@ -16,10 +16,10 @@ export function SelectBrand({ onSelect }: SelectBrandProps) {
 
   return (
     <div className="px-5 pt-2 pb-6">
-      <h2 className="text-xl tracking-tight text-[#163300] font-bold mb-0.5">
+      <h2 className="text-xl tracking-tight text-[#2D2D2D] font-bold mb-0.5">
         Select Brand
       </h2>
-      <p className="text-sm text-gray-400 mb-4">
+      <p className="text-sm text-gray-500 mb-4">
         Choose your car brand
       </p>
 
@@ -31,7 +31,7 @@ export function SelectBrand({ onSelect }: SelectBrandProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search brands..."
-          className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#F7F7F7] text-sm text-[#163300] placeholder-gray-300 outline-none border border-transparent focus:border-[#9FE870] transition-colors"
+          className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#F7F7F7] text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-transparent focus:border-[#D4D4D4] transition-colors"
         />
       </div>
 
@@ -55,7 +55,7 @@ export function SelectBrand({ onSelect }: SelectBrandProps) {
                   className="w-8 h-8 object-contain rounded"
                 />
               </div>
-              <span className="text-xs text-[#163300]">{brand.name}</span>
+              <span className="text-xs text-[#2D2D2D]">{brand.name}</span>
             </button>
           ))}
         </div>

@@ -29,10 +29,10 @@ export function SelectYear({ modelName, onSelect }: SelectYearProps) {
 
   return (
     <div className="px-5 pt-2 pb-6">
-      <h2 className="text-xl tracking-tight text-[#163300] font-bold mb-0.5">
+      <h2 className="text-xl tracking-tight text-[#2D2D2D] font-bold mb-0.5">
         Model Year
       </h2>
-      <p className="text-sm text-gray-400 mb-5">
+      <p className="text-sm text-gray-500 mb-5">
         When was your {modelName} made?
       </p>
 
@@ -47,8 +47,8 @@ export function SelectYear({ modelName, onSelect }: SelectYearProps) {
             onClick={() => handleYearTap(year)}
             className={`h-12 rounded-xl text-sm font-medium transition-all active:scale-[0.98] ${
               selectedYear === year
-                ? 'bg-[#163300] text-[#9FE870]'
-                : 'bg-[#F7F7F7] text-[#163300] hover:bg-[#EFEFEF]'
+                ? 'bg-[#2D2D2D] text-[#D4D4D4]'
+                : 'bg-[#F7F7F7] text-[#2D2D2D] hover:bg-[#EFEFEF]'
             }`}
           >
             {year}
@@ -67,7 +67,7 @@ export function SelectYear({ modelName, onSelect }: SelectYearProps) {
             className="overflow-hidden"
           >
             <div className="bg-[#F7F7F7] rounded-xl p-4 mt-4">
-              <p className="text-sm text-[#163300] font-medium mb-3">
+              <p className="text-sm text-[#2D2D2D] font-medium mb-3">
                 Is this car brand new?
               </p>
               <div className="flex gap-2">
@@ -75,8 +75,8 @@ export function SelectYear({ modelName, onSelect }: SelectYearProps) {
                   onClick={() => handleBrandNew(true)}
                   className={`flex-1 h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                     isBrandNew === true
-                      ? 'bg-[#163300] text-[#9FE870]'
-                      : 'bg-white text-[#163300] border border-gray-200'
+                      ? 'bg-[#2D2D2D] text-[#D4D4D4]'
+                      : 'bg-white text-[#2D2D2D] border border-gray-200'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -86,8 +86,8 @@ export function SelectYear({ modelName, onSelect }: SelectYearProps) {
                   onClick={() => handleBrandNew(false)}
                   className={`flex-1 h-10 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                     isBrandNew === false
-                      ? 'bg-[#163300] text-[#9FE870]'
-                      : 'bg-white text-[#163300] border border-gray-200'
+                      ? 'bg-[#2D2D2D] text-[#D4D4D4]'
+                      : 'bg-white text-[#2D2D2D] border border-gray-200'
                   }`}
                 >
                   <X className="w-3.5 h-3.5" />

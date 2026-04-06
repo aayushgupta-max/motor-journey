@@ -7,30 +7,30 @@ const slides = [
     icon: ShieldCheck,
     title: 'Comprehensive Coverage',
     subtitle: 'Protection for every journey in UAE',
-    bg: 'bg-[#DAFFC8]',
-    iconBg: 'bg-[#163300]',
-    iconColor: 'text-[#9FE870]',
-    textColor: 'text-[#163300]',
+    bg: 'bg-[#EFEFEF]',
+    iconBg: 'bg-[#2D2D2D]',
+    iconColor: 'text-[#D4D4D4]',
+    textColor: 'text-[#2D2D2D]',
   },
   {
     id: 2,
     icon: Zap,
     title: 'Instant Quotes',
     subtitle: 'Compare 20+ providers in seconds',
-    bg: 'bg-[#C9F0FF]',
-    iconBg: 'bg-[#003B5C]',
-    iconColor: 'text-[#62D4FF]',
-    textColor: 'text-[#003B5C]',
+    bg: 'bg-[#E8E8E8]',
+    iconBg: 'bg-[#3D3D3D]',
+    iconColor: 'text-[#B0B0B0]',
+    textColor: 'text-[#3D3D3D]',
   },
   {
     id: 3,
     icon: Percent,
     title: 'Save up to 40%',
     subtitle: 'Best prices guaranteed every time',
-    bg: 'bg-[#FFF3C9]',
-    iconBg: 'bg-[#5C4300]',
-    iconColor: 'text-[#FFD662]',
-    textColor: 'text-[#5C4300]',
+    bg: 'bg-[#F5F5F5]',
+    iconBg: 'bg-[#4A4A4A]',
+    iconColor: 'text-[#C0C0C0]',
+    textColor: 'text-[#4A4A4A]',
   },
 ];
 
@@ -56,7 +56,7 @@ export function BannerCarousel() {
           </div>
           <div className="flex-1 min-w-0">
             <p className={`text-sm ${slide.textColor}`}>{slide.title}</p>
-            <p className={`text-xs ${slide.textColor} opacity-60`}>{slide.subtitle}</p>
+            <p className={`text-xs ${slide.textColor} opacity-70`}>{slide.subtitle}</p>
           </div>
           <div className="flex gap-1.5">
             {slides.map((_, i) => (

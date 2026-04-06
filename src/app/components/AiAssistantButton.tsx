@@ -30,7 +30,7 @@ export function AiAssistantButton() {
     <motion.button
       layout
       onClick={() => setExpanded(!expanded)}
-      className="fixed bottom-6 right-4 z-50 flex items-center rounded-full bg-[#163300] shadow-lg active:scale-[0.98] transition-colors"
+      className="fixed bottom-6 right-4 z-50 flex items-center rounded-full bg-[#2D2D2D] shadow-lg active:scale-[0.98] transition-colors"
       style={{ padding: expanded ? '6px 14px 6px 6px' : '0px' }}
       aria-label="AI Assistant"
     >

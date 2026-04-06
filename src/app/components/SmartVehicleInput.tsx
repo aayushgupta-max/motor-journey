@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Search, Check, X, ArrowLeft, SendHorizonal } from 'lucide-react';
+import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   carBrands,
@@ -17,16 +17,9 @@ const popularBrands = carBrands.slice(0, 8);
 // Progressive suggestion phases
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
 
-// Only ask brand new vs pre-owned for very recent cars
-function shouldAskCondition(year: number): boolean {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  if (year === currentYear) return true;
-  if (year === currentYear - 1) {
-    // Within first 6 months of current year, a "last year" car could still be brand new
-    return now.getMonth() < 6;
-  }
-  return false;
+// Always ask brand new vs pre-owned
+function shouldAskCondition(_year: number): boolean {
+  return true;
 }
 
 function generateSuggestions(
@@ -318,16 +311,16 @@ export function SmartVehicleInput() {
             <div ref={scrollAreaRef} className="flex-1 overflow-auto bg-[#F7F7F7] flex flex-col">
               <div className="flex-1" />
               <div className="px-4 pb-2 pt-3 space-y-1.5">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence initial={false} mode="sync">
                   {filteredSuggestions.map((s, i) => (
                     <motion.button
                       key={s.text}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: i * 0.02 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                       onClick={() => handleSuggestionClick(s)}
-                      className="w-full flex items-center gap-3 px-4 min-h-[48px] py-2.5 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
+                      className="w-full flex items-center gap-3 px-4 min-h-[52px] py-3 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
                     >
                       {phase === 'brand' && (
                         <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -339,6 +332,9 @@ export function SmartVehicleInput() {
                         </div>
                       )}
                       <span className="text-sm text-[#2D2D2D] flex-1">{s.text}</span>
+                      {phase === 'condition' && (
+                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      )}
                     </motion.button>
                   ))}
                 </AnimatePresence>
@@ -364,8 +360,8 @@ export function SmartVehicleInput() {
               </div>
             </div>
 
-            {/* Bottom sticky input — connected to suggestions */}
-            <div className="flex-shrink-0 bg-[#F7F7F7] px-4 pt-2 pb-8">
+            {/* Bottom fixed input */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
                   {/* Ghost autocomplete */}
@@ -382,7 +378,7 @@ export function SmartVehicleInput() {
                     onChange={(e) => handleQueryChange(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="I have a Toyota Camry, 5 years old..."
-                    className="relative z-10 w-full h-14 px-4 rounded-2xl bg-white text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-gray-200 focus:border-[#2D2D2D] transition-colors"
+                    className="relative z-10 w-full h-12 px-4 rounded-xl bg-[#F7F7F7] text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-transparent focus:border-[#2D2D2D] focus:bg-white transition-colors"
                   />
                 </div>
                 {query.trim() && (
@@ -390,15 +386,12 @@ export function SmartVehicleInput() {
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     onClick={() => handleSubmit()}
-                    className="w-14 h-14 rounded-2xl bg-[#2D2D2D] flex items-center justify-center flex-shrink-0 active:scale-[0.95] transition-transform"
+                    className="w-12 h-12 rounded-xl bg-[#2D2D2D] flex items-center justify-center flex-shrink-0 active:scale-[0.95] transition-transform"
                   >
                     <SendHorizonal className="w-5 h-5 text-[#D4D4D4]" />
                   </motion.button>
                 )}
               </div>
-              {ghost && query.length > 0 && (
-                <p className="text-[10px] text-gray-400 mt-1.5 ml-1">Tab to autocomplete</p>
-              )}
             </div>
           </motion.div>
         )}

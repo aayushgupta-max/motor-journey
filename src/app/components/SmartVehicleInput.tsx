@@ -98,7 +98,10 @@ export function SmartVehicleInput() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsEndRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
 
@@ -155,6 +158,49 @@ export function SmartVehicleInput() {
       documentElement.style.overflow = previousHtmlOverflow;
       documentElement.style.overscrollBehavior = previousHtmlOverscroll;
       window.scrollTo(0, scrollY);
+    };
+  }, [expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const syncViewportHeight = () => {
+      setViewportHeight(viewport.height);
+    };
+
+    syncViewportHeight();
+    viewport.addEventListener('resize', syncViewportHeight);
+    viewport.addEventListener('scroll', syncViewportHeight);
+
+    return () => {
+      viewport.removeEventListener('resize', syncViewportHeight);
+      viewport.removeEventListener('scroll', syncViewportHeight);
+      setViewportHeight(null);
+    };
+  }, [expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    const overlay = overlayRef.current;
+    const scrollArea = suggestionsScrollRef.current;
+    if (!overlay || !scrollArea) return;
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (scrollArea.contains(event.target as Node)) {
+        return;
+      }
+
+      event.preventDefault();
+    };
+
+    overlay.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      overlay.removeEventListener('touchmove', handleTouchMove);
     };
   }, [expanded]);
 
@@ -303,11 +349,13 @@ export function SmartVehicleInput() {
       <AnimatePresence>
         {expanded && (
           <motion.div
+            ref={overlayRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="fixed inset-0 z-50 h-[100dvh] overflow-hidden bg-white grid grid-rows-[auto_auto_minmax(0,1fr)_auto]"
+            style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
           >
             {/* Header */}
             <div className="border-b border-gray-100 bg-white">
@@ -344,7 +392,10 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Suggestions — scrollable, anchored to bottom near input */}
-            <div className="min-h-0 flex-1 overflow-auto bg-[#F7F7F7] flex flex-col-reverse overscroll-contain">
+            <div
+              ref={suggestionsScrollRef}
+              className="min-h-0 flex-1 overflow-auto bg-[#F7F7F7] flex flex-col-reverse overscroll-contain touch-pan-y"
+            >
               <div className="min-h-full px-4 pb-2 pt-3 flex flex-col-reverse gap-1.5">
                 <div ref={suggestionsEndRef} />
 

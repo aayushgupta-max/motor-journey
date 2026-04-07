@@ -39,10 +39,10 @@ function generateSuggestions(
   }
 
   if (phase === 'model') {
-    // Models already sorted least→most popular in data; bottom = most popular
+    // Models in data are least→most popular; reverse so the most relevant model appears first in the stack.
     const parsed = parseVehicleInput(inputText);
     if (parsed?.brand) {
-      const models = modelsByBrand[parsed.brand] ?? [];
+      const models = [...(modelsByBrand[parsed.brand] ?? [])].reverse();
       return models.map((m) => ({
         text: `I have a ${parsed.brand} ${m}`,
         phase: 'model' as SuggestionPhase,
@@ -53,8 +53,8 @@ function generateSuggestions(
   if (phase === 'year') {
     const parsed = parseVehicleInput(inputText);
     if (parsed?.brand && parsed?.model) {
-      // Oldest first, newest last (bottom = most recent, shown first on open)
-      const years = getYearRange();
+      // Show newest model years first so the stack starts with the most likely choice.
+      const years = [...getYearRange()].reverse();
       return years.map((y) => ({
         text: `I have a ${parsed.brand} ${parsed.model}, ${y} model`,
         phase: 'year' as SuggestionPhase,
@@ -97,8 +97,6 @@ export function SmartVehicleInput() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsEndRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const shouldScrollToBottomRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
@@ -120,30 +118,7 @@ export function SmartVehicleInput() {
     }
   }, [expanded]);
 
-  // Auto-scroll only when the sheet opens so the initial view starts from the bottom.
-  useEffect(() => {
-    if (!expanded || !scrollAreaRef.current) {
-      return;
-    }
-
-    if (!shouldScrollToBottomRef.current) {
-      return;
-    }
-
-    shouldScrollToBottomRef.current = false;
-    const scrollArea = scrollAreaRef.current;
-
-    scrollArea.scrollTop = scrollArea.scrollHeight;
-
-    const frame = requestAnimationFrame(() => {
-      scrollArea.scrollTop = scrollArea.scrollHeight;
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [expanded]);
-
   const openExpanded = (initialQuery?: string) => {
-    shouldScrollToBottomRef.current = true;
     if (initialQuery) {
       setQuery(initialQuery);
       // Determine phase from initial query
@@ -325,43 +300,10 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Suggestions — scrollable, anchored to bottom near input */}
-            <div ref={scrollAreaRef} className="flex-1 overflow-auto bg-[#F7F7F7] flex flex-col">
-              <div className="flex-1" />
-              <motion.div
-                layout
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="px-4 pb-2 pt-3 space-y-1.5"
-              >
-                <AnimatePresence initial={false}>
-                {filteredSuggestions.map((s) => (
-                    <motion.button
-                      layout="position"
-                      key={s.text}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.16, ease: 'easeOut' }}
-                      onClick={() => handleSuggestionClick(s)}
-                      className="w-full flex items-center gap-3 px-4 min-h-[52px] py-3 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
-                    >
-                      {phase === 'brand' && (
-                        <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
-                          <img
-                            src={carBrands.find((b) => s.text.includes(b.name))?.initial}
-                            alt=""
-                            className="w-4.5 h-4.5 object-contain"
-                          />
-                        </div>
-                      )}
-                      <span className="text-sm text-[#2D2D2D] flex-1">{s.text}</span>
-                      {phase === 'condition' && (
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      )}
-                    </motion.button>
-                  ))}
-                </AnimatePresence>
+            <div className="flex-1 overflow-auto bg-[#F7F7F7] flex flex-col-reverse">
+              <div className="min-h-full px-4 pb-2 pt-3 flex flex-col-reverse gap-1.5">
+                <div ref={suggestionsEndRef} />
 
-                {/* Quick match for full parse */}
                 {phase === 'done' && (
                   <motion.button
                     initial={{ opacity: 0, y: 8 }}
@@ -378,8 +320,29 @@ export function SmartVehicleInput() {
                     </div>
                   </motion.button>
                 )}
-                <div ref={suggestionsEndRef} />
-              </motion.div>
+
+                {filteredSuggestions.map((s) => (
+                  <button
+                    key={s.text}
+                    onClick={() => handleSuggestionClick(s)}
+                    className="w-full flex items-center gap-3 px-4 min-h-[52px] py-3 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
+                  >
+                    {phase === 'brand' && (
+                      <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img
+                          src={carBrands.find((b) => s.text.includes(b.name))?.initial}
+                          alt=""
+                          className="w-4.5 h-4.5 object-contain"
+                        />
+                      </div>
+                    )}
+                    <span className="text-sm text-[#2D2D2D] flex-1">{s.text}</span>
+                    {phase === 'condition' && (
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Bottom fixed input */}

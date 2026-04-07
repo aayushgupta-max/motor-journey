@@ -307,42 +307,40 @@ export function SmartVehicleInput() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 h-[100dvh] overflow-hidden bg-white flex flex-col"
+            className="fixed inset-0 z-50 h-[100dvh] overflow-hidden bg-white grid grid-rows-[auto_auto_minmax(0,1fr)_auto]"
           >
-            <div className="sticky top-0 z-10 bg-white flex-shrink-0">
-              {/* Header */}
-              <div className="border-b border-gray-100">
-                <div className="container mx-auto px-5 py-3 max-w-5xl flex items-center gap-3">
-                  <button
-                    onClick={closeExpanded}
-                    className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center flex-shrink-0"
-                  >
-                    <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
-                  </button>
-                  <div>
-                    <p className="text-sm text-[#2D2D2D] font-bold">Find your car</p>
-                    <p className="text-xs text-gray-400">Tap a suggestion or just type freely</p>
-                  </div>
+            {/* Header */}
+            <div className="border-b border-gray-100 bg-white">
+              <div className="container mx-auto px-5 py-3 max-w-5xl flex items-center gap-3">
+                <button
+                  onClick={closeExpanded}
+                  className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center flex-shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
+                </button>
+                <div>
+                  <p className="text-sm text-[#2D2D2D] font-bold">Find your car</p>
+                  <p className="text-xs text-gray-400">Tap a suggestion or just type freely</p>
                 </div>
               </div>
+            </div>
 
-              {/* Question */}
-              <div className="px-5 pt-5 pb-3">
-                <h2 className="text-xl font-bold text-[#2D2D2D] tracking-tight">
-                  {phase === 'brand' && 'Tell us about your car'}
-                  {phase === 'model' && 'Which model?'}
-                  {phase === 'year' && 'What year?'}
-                  {phase === 'condition' && 'Brand new or pre-owned?'}
-                  {phase === 'done' && 'Looking good!'}
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  {phase === 'brand' && 'Pick a suggestion or type freely'}
-                  {phase === 'model' && 'Select your model below'}
-                  {phase === 'year' && 'Almost there — pick the year'}
-                  {phase === 'condition' && 'Last step — just one more thing'}
-                  {phase === 'done' && 'Hit send to get your quotes'}
-                </p>
-              </div>
+            {/* Question */}
+            <div className="bg-white px-5 pt-5 pb-3">
+              <h2 className="text-xl font-bold text-[#2D2D2D] tracking-tight">
+                {phase === 'brand' && 'Tell us about your car'}
+                {phase === 'model' && 'Which model?'}
+                {phase === 'year' && 'What year?'}
+                {phase === 'condition' && 'Brand new or pre-owned?'}
+                {phase === 'done' && 'Looking good!'}
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                {phase === 'brand' && 'Pick a suggestion or type freely'}
+                {phase === 'model' && 'Select your model below'}
+                {phase === 'year' && 'Almost there — pick the year'}
+                {phase === 'condition' && 'Last step — just one more thing'}
+                {phase === 'done' && 'Hit send to get your quotes'}
+              </p>
             </div>
 
             {/* Suggestions — scrollable, anchored to bottom near input */}
@@ -394,7 +392,7 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Bottom fixed input */}
-            <div className="sticky bottom-0 z-10 bg-white border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
+            <div className="bg-white border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
                   {/* Ghost autocomplete */}

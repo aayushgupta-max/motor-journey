@@ -98,6 +98,7 @@ export function SmartVehicleInput() {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const shouldScrollToBottomRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
@@ -117,29 +118,32 @@ export function SmartVehicleInput() {
     if (expanded) {
       setTimeout(() => inputRef.current?.focus(), 200);
     }
-  }, [expanded, phase]);
+  }, [expanded]);
 
-  // Auto-scroll suggestions to bottom so last items show first
+  // Auto-scroll only when the sheet opens so the initial view starts from the bottom.
   useEffect(() => {
-    if (expanded && scrollAreaRef.current) {
-      // Immediate scroll
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-      // Also scroll after AnimatePresence exit+enter animations complete
-      const t1 = setTimeout(() => {
-        if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-        }
-      }, 100);
-      const t2 = setTimeout(() => {
-        if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-        }
-      }, 400);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+    if (!expanded || !scrollAreaRef.current) {
+      return;
     }
-  }, [expanded, phase]);
+
+    if (!shouldScrollToBottomRef.current) {
+      return;
+    }
+
+    shouldScrollToBottomRef.current = false;
+    const scrollArea = scrollAreaRef.current;
+
+    scrollArea.scrollTop = scrollArea.scrollHeight;
+
+    const frame = requestAnimationFrame(() => {
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [expanded]);
 
   const openExpanded = (initialQuery?: string) => {
+    shouldScrollToBottomRef.current = true;
     if (initialQuery) {
       setQuery(initialQuery);
       // Determine phase from initial query
@@ -323,18 +327,20 @@ export function SmartVehicleInput() {
             {/* Suggestions — scrollable, anchored to bottom near input */}
             <div ref={scrollAreaRef} className="flex-1 overflow-auto bg-[#F7F7F7] flex flex-col">
               <div className="flex-1" />
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={phase}
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="px-4 pb-2 pt-3 space-y-1.5"
-                >
+              <motion.div
+                layout
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="px-4 pb-2 pt-3 space-y-1.5"
+              >
+                <AnimatePresence initial={false}>
                 {filteredSuggestions.map((s) => (
-                    <button
+                    <motion.button
+                      layout="position"
                       key={s.text}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.16, ease: 'easeOut' }}
                       onClick={() => handleSuggestionClick(s)}
                       className="w-full flex items-center gap-3 px-4 min-h-[52px] py-3 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
                     >
@@ -351,8 +357,9 @@ export function SmartVehicleInput() {
                       {phase === 'condition' && (
                         <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       )}
-                    </button>
+                    </motion.button>
                   ))}
+                </AnimatePresence>
 
                 {/* Quick match for full parse */}
                 {phase === 'done' && (
@@ -373,7 +380,6 @@ export function SmartVehicleInput() {
                 )}
                 <div ref={suggestionsEndRef} />
               </motion.div>
-              </AnimatePresence>
             </div>
 
             {/* Bottom fixed input */}

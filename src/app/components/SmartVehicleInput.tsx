@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { flushSync } from 'react-dom';
 import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight } from 'lucide-react';
@@ -97,7 +97,7 @@ function getGhostText(query: string, suggestions: { text: string }[]): string | 
 export function SmartVehicleInput() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const suggestionsEndRef = useRef<HTMLDivElement>(null);
+  const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
@@ -124,6 +124,13 @@ export function SmartVehicleInput() {
       focusInput();
     }
   }, [expanded, phase]);
+
+  useLayoutEffect(() => {
+    if (!expanded || !suggestionsScrollRef.current) return;
+
+    const scrollArea = suggestionsScrollRef.current;
+    scrollArea.scrollTop = scrollArea.scrollHeight;
+  }, [expanded, phase, filteredSuggestions.length]);
 
   const openExpanded = (initialQuery?: string) => {
     flushSync(() => {
@@ -311,29 +318,14 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Suggestions — scrollable, anchored to bottom near input */}
-            <div className="min-h-0 overflow-y-auto overflow-x-hidden bg-[#F7F7F7] [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch]">
-              <div className="min-h-full px-4 pb-2 pt-3 flex flex-col-reverse gap-1.5">
-                <div ref={suggestionsEndRef} />
+            <div
+              ref={suggestionsScrollRef}
+              className="min-h-0 overflow-y-auto overflow-x-hidden bg-[#F7F7F7] [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch]"
+            >
+              <div className="min-h-full px-4 pb-2 pt-3 flex flex-col justify-end gap-1.5">
+                <div className="flex-1 min-h-0" />
 
-                {phase === 'done' && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSubmit()}
-                    className="w-full p-4 rounded-2xl bg-[#2D2D2D] text-left flex items-center gap-3 active:scale-[0.98] transition-all"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-5 h-5 text-[#D4D4D4]" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-white font-medium">{query}</p>
-                      <p className="text-xs text-gray-400">Tap to get quotes instantly →</p>
-                    </div>
-                  </motion.button>
-                )}
-
-                {filteredSuggestions.map((s) => (
+                {[...filteredSuggestions].reverse().map((s) => (
                   <button
                     key={s.text}
                     onMouseDown={(e) => e.preventDefault()}
@@ -355,6 +347,24 @@ export function SmartVehicleInput() {
                     )}
                   </button>
                 ))}
+
+                {phase === 'done' && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSubmit()}
+                    className="w-full p-4 rounded-2xl bg-[#2D2D2D] text-left flex items-center gap-3 active:scale-[0.98] transition-all"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-5 h-5 text-[#D4D4D4]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white font-medium">{query}</p>
+                      <p className="text-xs text-gray-400">Tap to get quotes instantly →</p>
+                    </div>
+                  </motion.button>
+                )}
               </div>
             </div>
 

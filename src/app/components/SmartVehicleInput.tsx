@@ -96,9 +96,15 @@ function getGhostText(query: string, suggestions: { text: string }[]): string | 
 
 export function SmartVehicleInput() {
   const navigate = useNavigate();
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const questionRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
 
@@ -124,6 +130,54 @@ export function SmartVehicleInput() {
       focusInput();
     }
   }, [expanded, phase]);
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    const viewport = window.visualViewport;
+
+    const syncViewportHeight = () => {
+      setViewportHeight(viewport?.height ?? window.innerHeight);
+    };
+
+    syncViewportHeight();
+    viewport?.addEventListener('resize', syncViewportHeight);
+    viewport?.addEventListener('scroll', syncViewportHeight);
+    window.addEventListener('resize', syncViewportHeight);
+
+    return () => {
+      viewport?.removeEventListener('resize', syncViewportHeight);
+      viewport?.removeEventListener('scroll', syncViewportHeight);
+      window.removeEventListener('resize', syncViewportHeight);
+      setViewportHeight(null);
+    };
+  }, [expanded]);
+
+  useLayoutEffect(() => {
+    if (!expanded) return;
+
+    const measure = () => {
+      const availableHeight = viewportHeight ?? window.visualViewport?.height ?? window.innerHeight;
+      const headerHeight = headerRef.current?.offsetHeight ?? 0;
+      const questionHeight = questionRef.current?.offsetHeight ?? 0;
+      const inputHeight = inputBarRef.current?.offsetHeight ?? 0;
+      const nextHeight = Math.max(0, Math.floor(availableHeight - headerHeight - questionHeight - inputHeight));
+      setSuggestionsHeight(nextHeight);
+    };
+
+    measure();
+
+    const resizeObserver = new ResizeObserver(measure);
+    if (headerRef.current) resizeObserver.observe(headerRef.current);
+    if (questionRef.current) resizeObserver.observe(questionRef.current);
+    if (inputBarRef.current) resizeObserver.observe(inputBarRef.current);
+    if (overlayRef.current) resizeObserver.observe(overlayRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+      setSuggestionsHeight(null);
+    };
+  }, [expanded, viewportHeight, phase, query]);
 
   useLayoutEffect(() => {
     if (!expanded || !suggestionsScrollRef.current) return;
@@ -277,14 +331,16 @@ export function SmartVehicleInput() {
       <AnimatePresence>
         {expanded && (
           <motion.div
+            ref={overlayRef}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 h-[100svh] overflow-hidden bg-white grid grid-rows-[auto_auto_minmax(0,1fr)_auto]"
+            className="fixed inset-0 z-50 h-[100svh] overflow-hidden bg-white flex flex-col"
+            style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
           >
             {/* Header */}
-            <div className="border-b border-gray-100 bg-white">
+            <div ref={headerRef} className="border-b border-gray-100 bg-white flex-shrink-0">
               <div className="container mx-auto px-5 py-3 max-w-5xl flex items-center gap-3">
                 <button
                   onClick={closeExpanded}
@@ -300,7 +356,7 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Question */}
-            <div className="bg-white px-5 pt-5 pb-3">
+            <div ref={questionRef} className="bg-white px-5 pt-5 pb-3 flex-shrink-0">
               <h2 className="text-xl font-bold text-[#2D2D2D] tracking-tight">
                 {phase === 'brand' && 'Tell us about your car'}
                 {phase === 'model' && 'Which model?'}
@@ -321,6 +377,7 @@ export function SmartVehicleInput() {
             <div
               ref={suggestionsScrollRef}
               className="min-h-0 overflow-y-auto overflow-x-hidden bg-[#F7F7F7] [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch]"
+              style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
             >
               <div className="min-h-full px-4 pb-2 pt-3 flex flex-col justify-end gap-1.5">
                 <div className="flex-1 min-h-0" />
@@ -369,7 +426,7 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Bottom fixed input */}
-            <div className="bg-white border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div ref={inputBarRef} className="bg-white border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
                   {/* Ghost autocomplete */}

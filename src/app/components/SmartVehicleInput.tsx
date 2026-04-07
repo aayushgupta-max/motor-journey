@@ -98,10 +98,7 @@ export function SmartVehicleInput() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsEndRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
 
@@ -127,82 +124,6 @@ export function SmartVehicleInput() {
       focusInput();
     }
   }, [expanded, phase]);
-
-  useEffect(() => {
-    if (!expanded) return;
-
-    const scrollY = window.scrollY;
-    const { body, documentElement } = document;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPosition = body.style.position;
-    const previousBodyTop = body.style.top;
-    const previousBodyWidth = body.style.width;
-    const previousBodyOverscroll = body.style.overscrollBehavior;
-    const previousHtmlOverflow = documentElement.style.overflow;
-    const previousHtmlOverscroll = documentElement.style.overscrollBehavior;
-
-    body.style.overflow = 'hidden';
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.width = '100%';
-    body.style.overscrollBehavior = 'none';
-    documentElement.style.overflow = 'hidden';
-    documentElement.style.overscrollBehavior = 'none';
-
-    return () => {
-      body.style.overflow = previousBodyOverflow;
-      body.style.position = previousBodyPosition;
-      body.style.top = previousBodyTop;
-      body.style.width = previousBodyWidth;
-      body.style.overscrollBehavior = previousBodyOverscroll;
-      documentElement.style.overflow = previousHtmlOverflow;
-      documentElement.style.overscrollBehavior = previousHtmlOverscroll;
-      window.scrollTo(0, scrollY);
-    };
-  }, [expanded]);
-
-  useEffect(() => {
-    if (!expanded) return;
-
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    const syncViewportHeight = () => {
-      setViewportHeight(viewport.height);
-    };
-
-    syncViewportHeight();
-    viewport.addEventListener('resize', syncViewportHeight);
-    viewport.addEventListener('scroll', syncViewportHeight);
-
-    return () => {
-      viewport.removeEventListener('resize', syncViewportHeight);
-      viewport.removeEventListener('scroll', syncViewportHeight);
-      setViewportHeight(null);
-    };
-  }, [expanded]);
-
-  useEffect(() => {
-    if (!expanded) return;
-
-    const overlay = overlayRef.current;
-    const scrollArea = suggestionsScrollRef.current;
-    if (!overlay || !scrollArea) return;
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (scrollArea.contains(event.target as Node)) {
-        return;
-      }
-
-      event.preventDefault();
-    };
-
-    overlay.addEventListener('touchmove', handleTouchMove, { passive: false });
-
-    return () => {
-      overlay.removeEventListener('touchmove', handleTouchMove);
-    };
-  }, [expanded]);
 
   const openExpanded = (initialQuery?: string) => {
     flushSync(() => {
@@ -349,13 +270,11 @@ export function SmartVehicleInput() {
       <AnimatePresence>
         {expanded && (
           <motion.div
-            ref={overlayRef}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 h-[100dvh] overflow-hidden bg-white grid grid-rows-[auto_auto_minmax(0,1fr)_auto]"
-            style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="fixed inset-0 z-50 h-[100svh] overflow-hidden bg-white grid grid-rows-[auto_auto_minmax(0,1fr)_auto]"
           >
             {/* Header */}
             <div className="border-b border-gray-100 bg-white">
@@ -392,10 +311,7 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Suggestions — scrollable, anchored to bottom near input */}
-            <div
-              ref={suggestionsScrollRef}
-              className="min-h-0 flex-1 overflow-auto bg-[#F7F7F7] flex flex-col-reverse overscroll-contain touch-pan-y"
-            >
+            <div className="min-h-0 overflow-y-auto overflow-x-hidden bg-[#F7F7F7] [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch]">
               <div className="min-h-full px-4 pb-2 pt-3 flex flex-col-reverse gap-1.5">
                 <div ref={suggestionsEndRef} />
 

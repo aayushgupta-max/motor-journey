@@ -112,15 +112,17 @@ export function SmartVehicleInput() {
       )
     : currentSuggestions;
 
+  const focusInput = () => {
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+  };
+
   useEffect(() => {
     if (expanded) {
-      const frame = requestAnimationFrame(() => {
-        inputRef.current?.focus({ preventScroll: true });
-      });
-
-      return () => cancelAnimationFrame(frame);
+      focusInput();
     }
-  }, [expanded]);
+  }, [expanded, phase]);
 
   const openExpanded = (initialQuery?: string) => {
     if (initialQuery) {
@@ -312,6 +314,7 @@ export function SmartVehicleInput() {
                   <motion.button
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSubmit()}
                     className="w-full p-4 rounded-2xl bg-[#2D2D2D] text-left flex items-center gap-3 active:scale-[0.98] transition-all"
                   >
@@ -328,6 +331,7 @@ export function SmartVehicleInput() {
                 {filteredSuggestions.map((s) => (
                   <button
                     key={s.text}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSuggestionClick(s)}
                     className="w-full flex items-center gap-3 px-4 min-h-[52px] py-3 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
                   >

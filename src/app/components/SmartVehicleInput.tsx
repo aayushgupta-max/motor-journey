@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { flushSync } from 'react-dom';
-import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight } from 'lucide-react';
+import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   carBrands,
@@ -13,8 +13,7 @@ import {
 } from './vehicle-details/vehicleData';
 import type { VehicleSuggestion } from './vehicle-details/vehicleData';
 
-const popularBrands = carBrands.slice(0, 8);
-
+const popularBrands = carBrands.slice(0, 6);
 // Progressive suggestion phases
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
 
@@ -100,7 +99,8 @@ export function SmartVehicleInput() {
   const headerRef = useRef<HTMLDivElement>(null);
   const questionRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputSizerRef = useRef<HTMLDivElement>(null);
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
@@ -110,6 +110,7 @@ export function SmartVehicleInput() {
 
   const currentSuggestions = generateSuggestions(query, phase);
   const ghost = getGhostText(query, currentSuggestions);
+  const previewText = ghost && query.length > 0 ? ghost : query;
 
   // Filter suggestions based on typed text
   const filteredSuggestions = query.trim()
@@ -121,7 +122,11 @@ export function SmartVehicleInput() {
 
   const focusInput = () => {
     requestAnimationFrame(() => {
-      inputRef.current?.focus({ preventScroll: true });
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus({ preventScroll: true });
+      const caretPosition = input.value.length;
+      input.setSelectionRange(caretPosition, caretPosition);
     });
   };
 
@@ -186,6 +191,18 @@ export function SmartVehicleInput() {
     scrollArea.scrollTop = scrollArea.scrollHeight;
   }, [expanded, phase, filteredSuggestions.length]);
 
+  useLayoutEffect(() => {
+    const textarea = inputRef.current;
+    const sizer = inputSizerRef.current;
+    if (!textarea || !sizer) return;
+
+    sizer.textContent = `${previewText || query || ''}\n`;
+    const lineHeight = 20;
+    const maxHeight = lineHeight * 4;
+    const nextHeight = Math.min(Math.max(sizer.scrollHeight, lineHeight), maxHeight);
+    textarea.style.height = `${nextHeight}px`;
+  }, [query, previewText, expanded]);
+
   const openExpanded = (initialQuery?: string) => {
     flushSync(() => {
       if (initialQuery) {
@@ -200,7 +217,7 @@ export function SmartVehicleInput() {
       setExpanded(true);
     });
 
-    inputRef.current?.focus({ preventScroll: true });
+    focusInput();
   };
 
   const closeExpanded = () => {
@@ -222,11 +239,14 @@ export function SmartVehicleInput() {
         setPhase('condition');
         setQuery(suggestion.text + ', ');
       } else {
-        handleSubmit(suggestion.text);
+        setQuery(suggestion.text);
+        setPhase('done');
         return;
       }
     } else if (suggestion.phase === 'condition') {
-      handleSubmit(suggestion.text);
+      setQuery(suggestion.text);
+      setPhase('done');
+      return;
     }
 
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -257,7 +277,7 @@ export function SmartVehicleInput() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab' && ghost && query.length < ghost.length) {
       e.preventDefault();
       setQuery(ghost);
@@ -271,7 +291,7 @@ export function SmartVehicleInput() {
         setPhase('model');
       }
     }
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit();
     }
@@ -297,33 +317,62 @@ export function SmartVehicleInput() {
   return (
     <>
       {/* Collapsed trigger on home page */}
-      <div className="space-y-3">
-        <p className="text-sm text-[#2D2D2D] font-bold mb-2">Tell us about your car</p>
+      <div className="space-y-2.5 overflow-visible py-5">
+        <div className="px-5">
+          <p className="text-[16px] text-[#2D2D2D] font-bold mb-1.5">Tell us your requirement</p>
+        </div>
 
-        <button
-          onClick={() => openExpanded()}
-          className="w-full h-12 pl-10 pr-4 rounded-xl bg-white text-sm text-gray-300 text-left border border-gray-200 relative"
-        >
-          <Search className="w-4 h-4 text-gray-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          e.g. Toyota Camry or just Camry...
-        </button>
-
-        <div>
-          <p className="text-xs text-gray-400 mb-2.5">I have a...</p>
-          <div className="grid grid-cols-4 gap-2">
-            {popularBrands.map((brand) => (
-              <button
-                key={brand.id}
-                onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                className="flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl bg-white border border-gray-100 hover:border-gray-300 active:scale-[0.97] transition-all"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden">
-                  <img src={brand.initial} alt={brand.name} className="w-5 h-5 object-contain" />
-                </div>
-                <span className="text-xs text-[#2D2D2D] font-medium">{brand.name}</span>
-              </button>
-            ))}
+        <div className="overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="w-max space-y-2">
+            <div className="flex w-max gap-1.5">
+              {popularBrands.slice(0, 3).map((brand) => (
+                <button
+                  key={brand.id}
+                  onClick={() => openExpanded('I have a ' + brand.name + ' ')}
+                  className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
+                >
+                  <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
+                    <span className="font-medium">I have a </span>
+                    <span className="font-semibold">{brand.name}</span>
+                    <span className="font-medium">...</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="flex w-max gap-1.5">
+              {popularBrands.slice(3, 6).map((brand) => (
+                <button
+                  key={brand.id}
+                  onClick={() => openExpanded('I have a ' + brand.name + ' ')}
+                  className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
+                >
+                  <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
+                    <span className="font-medium">I have a </span>
+                    <span className="font-semibold">{brand.name}</span>
+                    <span className="font-medium">...</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className="px-5">
+          <button
+            onClick={() => openExpanded()}
+            className="w-full rounded-[18px] border border-gray-200 bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-gray-300 hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm leading-5 text-gray-400">
+                  Write about your car and insurance requirement...
+                </p>
+              </div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2D2D2D]">
+                <SendHorizonal className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -349,114 +398,99 @@ export function SmartVehicleInput() {
                   <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
                 </button>
                 <div>
-                  <p className="text-sm text-[#2D2D2D] font-bold">Find your car</p>
-                  <p className="text-xs text-gray-400">Tap a suggestion or just type freely</p>
+                  <p className="text-[16px] text-[#2D2D2D] font-bold">Your requirements</p>
+                  <p className="text-xs text-gray-400">Tell us about your car in detail</p>
                 </div>
               </div>
             </div>
 
-            {/* Question */}
-            <div ref={questionRef} className="bg-white px-5 pt-5 pb-3 flex-shrink-0">
-              <h2 className="text-xl font-bold text-[#2D2D2D] tracking-tight">
-                {phase === 'brand' && 'Tell us about your car'}
-                {phase === 'model' && 'Which model?'}
-                {phase === 'year' && 'What year?'}
-                {phase === 'condition' && 'Brand new or pre-owned?'}
-                {phase === 'done' && 'Looking good!'}
-              </h2>
-              <p className="text-sm text-gray-400 mt-1">
-                {phase === 'brand' && 'Pick a suggestion or type freely'}
-                {phase === 'model' && 'Select your model below'}
-                {phase === 'year' && 'Almost there — pick the year'}
-                {phase === 'condition' && 'Last step — just one more thing'}
-                {phase === 'done' && 'Hit send to get your quotes'}
+            <div ref={questionRef} className="bg-white px-5 pt-5 pb-0 flex-shrink-0">
+              <p className="text-[36px] leading-tight font-bold text-[#2D2D2D]">
+                What car do you own?
               </p>
             </div>
 
             {/* Suggestions — scrollable, anchored to bottom near input */}
             <div
               ref={suggestionsScrollRef}
-              className="min-h-0 overflow-y-auto overflow-x-hidden bg-[#F7F7F7] [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch]"
+              className="min-h-0 flex-1 bg-white overflow-y-auto"
               style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
             >
-              <div className="min-h-full px-4 pb-2 pt-3 flex flex-col justify-end gap-1.5">
-                <div className="flex-1 min-h-0" />
-
-                {[...filteredSuggestions].reverse().map((s) => (
-                  <button
-                    key={s.text}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSuggestionClick(s)}
-                    className="w-full flex items-center gap-3 px-4 min-h-[52px] py-3 rounded-2xl bg-white text-left active:scale-[0.99] active:bg-gray-50 transition-all"
-                  >
-                    {phase === 'brand' && (
-                      <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img
-                          src={carBrands.find((b) => s.text.includes(b.name))?.initial}
-                          alt=""
-                          className="w-4.5 h-4.5 object-contain"
-                        />
-                      </div>
-                    )}
-                    <span className="text-sm text-[#2D2D2D] flex-1">{s.text}</span>
-                    {phase === 'condition' && (
-                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    )}
-                  </button>
-                ))}
-
-                {phase === 'done' && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSubmit()}
-                    className="w-full p-4 rounded-2xl bg-[#2D2D2D] text-left flex items-center gap-3 active:scale-[0.98] transition-all"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-5 h-5 text-[#D4D4D4]" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-white font-medium">{query}</p>
-                      <p className="text-xs text-gray-400">Tap to get quotes instantly →</p>
-                    </div>
-                  </motion.button>
-                )}
+              <div className="flex min-h-full flex-col justify-end px-5 pb-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                      {filteredSuggestions.slice(0, 3).map((suggestion) => (
+                        <button
+                          key={suggestion.text}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
+                        >
+                          <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
+                            {suggestion.text}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                      {filteredSuggestions.slice(3, 6).map((suggestion) => (
+                        <button
+                          key={suggestion.text}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
+                        >
+                          <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
+                            {suggestion.text}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Bottom fixed input */}
-            <div ref={inputBarRef} className="bg-white border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
-              <div className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  {/* Ghost autocomplete */}
-                  {ghost && query.length > 0 && (
-                    <div className="absolute inset-0 flex items-center px-4 pointer-events-none z-0">
-                      <span className="text-sm text-transparent">{query}</span>
-                      <span className="text-sm text-gray-300">{ghost.slice(query.length)}</span>
-                    </div>
-                  )}
-                  <input
-                    ref={inputRef}
-                    autoFocus
-                    type="text"
-                    value={query}
-                    onChange={(e) => handleQueryChange(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="I have a Toyota Camry, 5 years old..."
-                    className="relative z-10 w-full h-12 px-4 rounded-xl bg-[#F7F7F7] text-sm text-[#2D2D2D] placeholder-gray-300 outline-none border border-transparent focus:border-[#2D2D2D] focus:bg-white transition-colors"
-                  />
-                </div>
-                {query.trim() && (
-                  <motion.button
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    onClick={() => handleSubmit()}
-                    className="w-12 h-12 rounded-xl bg-[#2D2D2D] flex items-center justify-center flex-shrink-0 active:scale-[0.95] transition-transform"
+            <div ref={inputBarRef} className="bg-white border-t border-gray-100 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] flex-shrink-0">
+              <div className="w-full rounded-[18px] border border-gray-200 bg-[#FAFAFA] p-2 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-gray-300 hover:bg-[#F7F7F7] focus-within:border-[#2D2D2D] focus-within:ring-2 focus-within:ring-black/5">
+                <div className="flex items-center gap-3 min-h-9">
+                  <button
+                    type="button"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F3F4F6] text-[#6B7280] flex-shrink-0 transition-colors hover:bg-[#E5E7EB]"
                   >
-                    <SendHorizonal className="w-5 h-5 text-[#D4D4D4]" />
-                  </motion.button>
-                )}
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <div className="relative flex-1 min-w-0">
+                    <div
+                      ref={inputSizerRef}
+                      className="invisible absolute left-0 top-0 -z-10 w-full whitespace-pre-wrap break-words p-0 m-0 text-sm leading-5"
+                      aria-hidden="true"
+                    />
+                    {ghost && query.length > 0 && (
+                      <div className="absolute inset-0 pointer-events-none z-0 whitespace-pre-wrap break-words p-0 m-0 text-sm leading-5">
+                        <span className="text-transparent">{query}</span>
+                        <span className="text-gray-300">{ghost.slice(query.length)}</span>
+                      </div>
+                    )}
+                    <textarea
+                      ref={inputRef}
+                      autoFocus
+                      rows={1}
+                      value={query}
+                      onChange={(e) => handleQueryChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type here..."
+                      className="relative z-10 m-0 max-h-20 w-full resize-none overflow-y-auto bg-transparent p-0 text-sm leading-5 text-[#2D2D2D] placeholder-gray-400 outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit()}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2D2D2D] flex-shrink-0"
+                  >
+                    <SendHorizonal className="w-4 h-4 text-white" />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

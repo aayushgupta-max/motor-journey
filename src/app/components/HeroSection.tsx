@@ -21,7 +21,7 @@ export function HeroSection() {
 
         <div className="relative flex flex-col md:grid md:grid-cols-2 gap-4 max-w-4xl mx-auto mb-5">
           {/* Mulkiya Upload Card */}
-          <div className="bg-[#D4D4D4] rounded-2xl p-5 flex flex-col relative overflow-hidden">
+          <div className="bg-[#EBEBEB] rounded-[28px] border border-black/5 p-5 flex flex-col relative overflow-hidden shadow-[0_6px_18px_rgba(17,24,39,0.06)]">
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#BEBEBE] rounded-full opacity-50" />
             <div className="absolute -right-2 -bottom-8 w-20 h-20 bg-[#E0E0E0] rounded-full opacity-40" />
 
@@ -62,7 +62,7 @@ export function HeroSection() {
           </div>
 
           {/* Smart Vehicle Input Card */}
-          <div className="bg-[#EBEBEB] rounded-2xl p-5 flex flex-col">
+          <div className="bg-[#EBEBEB] rounded-[28px] flex flex-col">
             <SmartVehicleInput />
           </div>
         </div>

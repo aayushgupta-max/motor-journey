@@ -114,7 +114,11 @@ export function SmartVehicleInput() {
 
   useEffect(() => {
     if (expanded) {
-      setTimeout(() => inputRef.current?.focus(), 200);
+      const frame = requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true });
+      });
+
+      return () => cancelAnimationFrame(frame);
     }
   }, [expanded]);
 
@@ -358,6 +362,7 @@ export function SmartVehicleInput() {
                   )}
                   <input
                     ref={inputRef}
+                    autoFocus
                     type="text"
                     value={query}
                     onChange={(e) => handleQueryChange(e.target.value)}

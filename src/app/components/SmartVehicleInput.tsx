@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { flushSync } from 'react-dom';
 import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -125,16 +126,20 @@ export function SmartVehicleInput() {
   }, [expanded, phase]);
 
   const openExpanded = (initialQuery?: string) => {
-    if (initialQuery) {
-      setQuery(initialQuery);
-      // Determine phase from initial query
-      const parsed = parseVehicleInput(initialQuery);
-      if (parsed?.brand && parsed?.model && parsed?.year) setPhase('condition');
-      else if (parsed?.brand && parsed?.model) setPhase('year');
-      else if (parsed?.brand) setPhase('model');
-      else setPhase('brand');
-    }
-    setExpanded(true);
+    flushSync(() => {
+      if (initialQuery) {
+        setQuery(initialQuery);
+        // Determine phase from initial query
+        const parsed = parseVehicleInput(initialQuery);
+        if (parsed?.brand && parsed?.model && parsed?.year) setPhase('condition');
+        else if (parsed?.brand && parsed?.model) setPhase('year');
+        else if (parsed?.brand) setPhase('model');
+        else setPhase('brand');
+      }
+      setExpanded(true);
+    });
+
+    inputRef.current?.focus({ preventScroll: true });
   };
 
   const closeExpanded = () => {

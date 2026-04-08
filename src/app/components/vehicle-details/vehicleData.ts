@@ -48,6 +48,39 @@ export interface VehicleSuggestion {
   display: string;
 }
 
+export type VehicleSpec = 'gcc' | 'non-gcc';
+export type CoverageType = 'third-party' | 'comprehensive';
+
+const typoCorrections: Array<[RegExp, string]> = [
+  [/\btoyta\b/g, 'toyota'],
+  [/\btoytoa\b/g, 'toyota'],
+  [/\bnisan\b/g, 'nissan'],
+  [/\bhonda\b/g, 'honda'],
+  [/\bhyund?ai\b/g, 'hyundai'],
+  [/\bmercedez\b/g, 'mercedes'],
+  [/\bmercedesz\b/g, 'mercedes'],
+  [/\bbmwv?\b/g, 'bmw'],
+  [/\baudii\b/g, 'audi'],
+  [/\bcorola\b/g, 'corolla'],
+  [/\bcamm?ry\b/g, 'camry'],
+  [/\blandcruiser\b/g, 'land cruiser'],
+  [/\bfortuner\b/g, 'fortuner'],
+  [/\bcompr?ih?ensive\b/g, 'comprehensive'],
+  [/\bthird\s*pary\b/g, 'third party'],
+  [/\bthird\s*prt?y\b/g, 'third party'],
+  [/\bnon\s*gcc\b/g, 'non-gcc'],
+  [/\bnon[-\s]?gccc\b/g, 'non-gcc'],
+  [/\bgcc\s*specs?\b/g, 'gcc'],
+];
+
+export function normalizeVehicleQuery(input: string): string {
+  let normalized = input.toLowerCase();
+  for (const [pattern, replacement] of typoCorrections) {
+    normalized = normalized.replace(pattern, replacement);
+  }
+  return normalized.replace(/\s+/g, ' ').trim();
+}
+
 export function searchVehicles(query: string): VehicleSuggestion[] {
   if (!query.trim()) return [];
 
@@ -58,7 +91,7 @@ export function searchVehicles(query: string): VehicleSuggestion[] {
     "it's a ", 'its a ', 'i got a ', 'i got an ',
     'my ', 'i have ', 'i drive ', 'i own ',
   ];
-  let q = query.toLowerCase().trim();
+  let q = normalizeVehicleQuery(query);
   for (const p of convPrefixes) {
     if (q.startsWith(p)) {
       q = q.slice(p.length).trim();
@@ -105,7 +138,14 @@ export function searchVehicles(query: string): VehicleSuggestion[] {
   return results.slice(0, 8);
 }
 
-export function parseVehicleInput(input: string): { brand?: string; model?: string; year?: number; isBrandNew?: boolean } {
+export function parseVehicleInput(input: string): {
+  brand?: string;
+  model?: string;
+  year?: number;
+  isBrandNew?: boolean;
+  spec?: VehicleSpec;
+  coverage?: CoverageType;
+} {
   const currentYear = 2026;
 
   // Strip conversational prefixes
@@ -115,7 +155,7 @@ export function parseVehicleInput(input: string): { brand?: string; model?: stri
     "it's a ", 'its a ', 'i got a ', 'i got an ',
     'my ', 'i have ', 'i drive ', 'i own ',
   ];
-  let stripped = input.trim().toLowerCase();
+  let stripped = normalizeVehicleQuery(input);
   for (const p of convPrefixes) {
     if (stripped.startsWith(p)) {
       stripped = stripped.slice(p.length);
@@ -128,6 +168,8 @@ export function parseVehicleInput(input: string): { brand?: string; model?: stri
   let model: string | undefined;
   let year: number | undefined;
   let isBrandNew: boolean | undefined;
+  let spec: VehicleSpec | undefined;
+  let coverage: CoverageType | undefined;
 
   // Extract relative age: "5 years old", "3 year old", "5 yr"
   const ageMatch = raw.match(/(\d+)\s*(?:years?|yrs?)\s*(?:old)?/);
@@ -144,6 +186,18 @@ export function parseVehicleInput(input: string): { brand?: string; model?: stri
   } else if (/\bbrand\s*new\b/.test(raw) || /\bnew\b/.test(raw)) {
     if (!year) year = currentYear;
     isBrandNew = true;
+  }
+
+  if (/\b(gcc|gulf)\b/.test(raw)) {
+    spec = 'gcc';
+  } else if (/\b(non[-\s]?gcc|imported|american|us|european|japanese)\b/.test(raw)) {
+    spec = 'non-gcc';
+  }
+
+  if (/\bthird[-\s]?party\b/.test(raw)) {
+    coverage = 'third-party';
+  } else if (/\b(comprehensive|full)\b/.test(raw)) {
+    coverage = 'comprehensive';
   }
 
   // Extract absolute year if any token is a 4-digit number in range
@@ -194,5 +248,5 @@ export function parseVehicleInput(input: string): { brand?: string; model?: stri
     }
   }
 
-  return { brand, model, year, isBrandNew };
+  return { brand, model, year, isBrandNew, spec, coverage };
 }

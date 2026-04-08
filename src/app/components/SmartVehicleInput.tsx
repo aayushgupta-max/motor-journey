@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { flushSync } from 'react-dom';
-import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight, Plus } from 'lucide-react';
+import { Search, Check, X, ArrowLeft, SendHorizonal, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   carBrands,
   searchVehicles,
   getYearRange,
+  normalizeVehicleQuery,
   shouldAskBrandNew,
   parseVehicleInput,
   modelsByBrand,
@@ -108,8 +109,11 @@ export function SmartVehicleInput() {
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
 
-  const currentSuggestions = generateSuggestions(query, phase);
-  const ghost = getGhostText(query, currentSuggestions);
+  const normalizedQuery = normalizeVehicleQuery(query);
+  const currentSuggestions = generateSuggestions(normalizedQuery || query, phase);
+  const ghost = normalizedQuery === query.toLowerCase().trim()
+    ? getGhostText(query, currentSuggestions)
+    : null;
   const previewText = ghost && query.length > 0 ? ghost : query;
 
   // Filter suggestions based on typed text
@@ -208,7 +212,7 @@ export function SmartVehicleInput() {
       if (initialQuery) {
         setQuery(initialQuery);
         // Determine phase from initial query
-        const parsed = parseVehicleInput(initialQuery);
+        const parsed = parseVehicleInput(normalizeVehicleQuery(initialQuery));
         if (parsed?.brand && parsed?.model && parsed?.year) setPhase('condition');
         else if (parsed?.brand && parsed?.model) setPhase('year');
         else if (parsed?.brand) setPhase('model');
@@ -254,7 +258,7 @@ export function SmartVehicleInput() {
 
   const handleSubmit = (text?: string) => {
     const input = text || query;
-    const parsed = parseVehicleInput(input);
+    const parsed = parseVehicleInput(normalizeVehicleQuery(input));
 
     if (parsed?.brand && parsed?.model && parsed?.year && (parsed?.isBrandNew !== undefined || !shouldAskCondition(parsed.year))) {
       const brandObj = carBrands.find((b) => b.name === parsed.brand);
@@ -282,7 +286,7 @@ export function SmartVehicleInput() {
       e.preventDefault();
       setQuery(ghost);
       // Advance phase based on what ghost completed
-      const parsed = parseVehicleInput(ghost);
+      const parsed = parseVehicleInput(normalizeVehicleQuery(ghost));
       if (parsed?.brand && parsed?.model && parsed?.year) {
         // Don't auto-navigate, let user confirm
       } else if (parsed?.brand && parsed?.model) {
@@ -300,7 +304,7 @@ export function SmartVehicleInput() {
   // When query changes manually (typing), detect phase
   const handleQueryChange = (val: string) => {
     setQuery(val);
-    const parsed = parseVehicleInput(val);
+    const parsed = parseVehicleInput(normalizeVehicleQuery(val));
     if (parsed?.brand && parsed?.model && parsed?.year && (parsed?.isBrandNew !== undefined || !shouldAskCondition(parsed.year))) {
       setPhase('done');
     } else if (parsed?.brand && parsed?.model && parsed?.year && shouldAskCondition(parsed.year)) {
@@ -329,12 +333,12 @@ export function SmartVehicleInput() {
                 <button
                   key={brand.id}
                   onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
+                  className="inline-flex w-fit items-center rounded-[999px] bg-white/70 border border-black/5 px-2.5 py-1.5 text-left hover:border-black/10 hover:bg-white transition-all"
                 >
                   <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
-                    <span className="font-medium">I have a </span>
-                    <span className="font-semibold">{brand.name}</span>
-                    <span className="font-medium">...</span>
+                    <span className="font-normal">I have a </span>
+                    <span className="font-medium text-[#374151]">{brand.name}</span>
+                    <span className="font-normal">...</span>
                   </span>
                 </button>
               ))}
@@ -344,12 +348,12 @@ export function SmartVehicleInput() {
                 <button
                   key={brand.id}
                   onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
+                  className="inline-flex w-fit items-center rounded-[999px] bg-white/70 border border-black/5 px-2.5 py-1.5 text-left hover:border-black/10 hover:bg-white transition-all"
                 >
                   <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
-                    <span className="font-medium">I have a </span>
-                    <span className="font-semibold">{brand.name}</span>
-                    <span className="font-medium">...</span>
+                    <span className="font-normal">I have a </span>
+                    <span className="font-medium text-[#374151]">{brand.name}</span>
+                    <span className="font-normal">...</span>
                   </span>
                 </button>
               ))}
@@ -413,45 +417,31 @@ export function SmartVehicleInput() {
             {/* Suggestions — scrollable, anchored to bottom near input */}
             <div
               ref={suggestionsScrollRef}
-              className="min-h-0 flex-1 bg-white overflow-y-auto"
+              className="min-h-0 flex-1 bg-white"
               style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
-            >
-              <div className="flex min-h-full flex-col justify-end px-5 pb-4">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-1.5">
-                      {filteredSuggestions.slice(0, 3).map((suggestion) => (
-                        <button
-                          key={suggestion.text}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
-                        >
-                          <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
-                            {suggestion.text}
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                      {filteredSuggestions.slice(3, 6).map((suggestion) => (
-                        <button
-                          key={suggestion.text}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="inline-flex w-fit items-center rounded-[999px] bg-white border border-gray-200 px-2.5 py-1.5 text-left hover:border-gray-300 hover:bg-gray-50 transition-all"
-                        >
-                          <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
-                            {suggestion.text}
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            />
 
             {/* Bottom fixed input */}
             <div ref={inputBarRef} className="bg-white border-t border-gray-100 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] flex-shrink-0">
+              {filteredSuggestions.length > 0 && (
+                <div className="mb-2 rounded-[18px] border border-gray-200 bg-[#FAFAFA] p-[2px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                  <div className="overflow-hidden rounded-[16px] bg-white">
+                    {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+                      <button
+                        key={suggestion.text}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-[#4B5563] transition-colors hover:bg-[#F7F7F7] ${
+                          index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-black/5' : ''
+                        }`}
+                      >
+                        <Sparkles className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                        <span className="truncate">{suggestion.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="w-full rounded-[18px] border border-gray-200 bg-[#FAFAFA] p-2 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-gray-300 hover:bg-[#F7F7F7] focus-within:border-[#2D2D2D] focus-within:ring-2 focus-within:ring-black/5">
                 <div className="flex items-center gap-3 min-h-9">
                   <button

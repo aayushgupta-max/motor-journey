@@ -19,7 +19,7 @@ export function HeroSection() {
           </p>
         </div>
 
-        <div className="relative flex flex-col md:grid md:grid-cols-2 gap-4 max-w-4xl mx-auto mb-5">
+        <div className="relative flex flex-col md:grid md:grid-cols-2 gap-5 max-w-4xl mx-auto mb-5">
           {/* Mulkiya Upload Card */}
           <div className="bg-[#EBEBEB] rounded-[28px] border border-black/5 p-5 flex flex-col relative overflow-hidden shadow-[0_6px_18px_rgba(17,24,39,0.06)]">
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#BEBEBE] rounded-full opacity-50" />

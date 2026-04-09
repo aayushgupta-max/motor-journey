@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { flushSync } from 'react-dom';
 import { SendHorizonal, Sparkles, Pencil, Check, Plus, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { PageHeaderBar } from './PageHeaderBar';
 import {
   carBrands,
@@ -504,7 +502,7 @@ function getGhostText(query: string, suggestions: { text: string }[]): string | 
   return null;
 }
 
-export function SmartVehicleInput() {
+export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQueryProp }: { mode?: 'trigger' | 'page'; initialQuery?: string } = {}) {
   const navigate = useNavigate();
   const overlayRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -532,6 +530,23 @@ export function SmartVehicleInput() {
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const extractionTimerRef = useRef<number | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
+  const didInitPageMode = useRef(false);
+
+  // Auto-expand when rendered as a page
+  useEffect(() => {
+    if (mode !== 'page' || didInitPageMode.current) return;
+    didInitPageMode.current = true;
+    if (initialQueryProp) {
+      setQuery(initialQueryProp);
+      const parsed = parseVehicleInput(normalizeVehicleQuery(initialQueryProp));
+      if (parsed?.brand && parsed?.model && parsed?.year) setPhase('condition');
+      else if (parsed?.brand && parsed?.model) setPhase('year');
+      else if (parsed?.brand) setPhase('model');
+      else setPhase('brand');
+    }
+    setExpanded(true);
+    focusInput();
+  }, [mode, initialQueryProp]);
 
   const normalizedQuery = normalizeVehicleQuery(query);
   const draftDetails = mergeDetails(details, parseDetailsFromText(query));
@@ -615,14 +630,6 @@ export function SmartVehicleInput() {
   useEffect(() => {
     if (!expanded) return;
 
-    // Lock body to prevent Safari from scrolling the page behind the overlay
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.overflow = 'hidden';
-
     const viewport = window.visualViewport;
 
     const syncViewportHeight = () => {
@@ -641,14 +648,6 @@ export function SmartVehicleInput() {
       window.removeEventListener('resize', syncViewportHeight);
       setViewportHeight(null);
       setViewportOffsetTop(0);
-
-      // Unlock body and restore scroll position
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, scrollY);
     };
   }, [expanded]);
 
@@ -699,20 +698,7 @@ export function SmartVehicleInput() {
   }, [query, previewText, expanded]);
 
   const openExpanded = (initialQuery?: string) => {
-    flushSync(() => {
-      if (initialQuery) {
-        setQuery(initialQuery);
-        // Determine phase from initial query
-        const parsed = parseVehicleInput(normalizeVehicleQuery(initialQuery));
-        if (parsed?.brand && parsed?.model && parsed?.year) setPhase('condition');
-        else if (parsed?.brand && parsed?.model) setPhase('year');
-        else if (parsed?.brand) setPhase('model');
-        else setPhase('brand');
-      }
-      setExpanded(true);
-    });
-
-    focusInput();
+    navigate('/requirements', { state: { initialQuery: initialQuery || '' } });
   };
 
   const closeExpanded = () => {
@@ -726,6 +712,7 @@ export function SmartVehicleInput() {
     setIsExtracting(false);
     setHighlightedFields([]);
     setAttachments([]);
+    navigate('/');
     if (extractionTimerRef.current) {
       window.clearTimeout(extractionTimerRef.current);
       extractionTimerRef.current = null;
@@ -900,10 +887,274 @@ export function SmartVehicleInput() {
     }
   };
 
+  // Page mode: render the expanded UI as a full-screen page (no overlay, no home behind)
+  if (mode === 'page') {
+    return (
+      <div
+        ref={overlayRef}
+        className="flex flex-col bg-white"
+        style={{
+          height: viewportHeight ? `${viewportHeight}px` : '100svh',
+          transform: `translateY(${viewportOffsetTop}px)`,
+        }}
+      >
+        {/* Header */}
+        <div ref={headerRef}>
+          <PageHeaderBar
+            title="Your requirements"
+            subtitle="Tell us about your car in detail"
+            onBack={closeExpanded}
+          />
+        </div>
+
+        <div ref={questionRef} className="relative z-10 bg-[#F3F5F7] px-5 pt-3 pb-3 shadow-[0_14px_30px_rgba(15,17,19,0.10)] flex-shrink-0">
+          {!hasExtraction ? (
+            <p className="text-[36px] leading-tight font-bold text-[#0F1113]">
+              What car do you own?
+            </p>
+          ) : (
+            <>
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[16px] leading-5 font-semibold text-[#0F1113]">
+                    {visiblePrimaryFields.length > 0 ? visiblePrimaryFields.map((field) => details[field]).join(' · ') : 'Extracting vehicle details'}
+                  </p>
+                  <p className="text-[11px] text-[#8A919A]">{coreStatusText}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingDraft(details);
+                    setEditMode((prev) => !prev);
+                  }}
+                  className="inline-flex h-7 items-center gap-1 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-2.5 text-[11px] text-[#0F1113]"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </button>
+              </div>
+              <div className="-mx-5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div ref={detailRailRef} className="flex min-w-max gap-1.5 pb-0.5">
+                  {visibleSecondaryFields.map((field) => (
+                    <div
+                      key={field}
+                      ref={(node) => {
+                        chipRefs.current[field] = node;
+                      }}
+                      className={`inline-flex items-center gap-1 rounded-full bg-[#FFFFFF] px-2.5 py-1.5 text-[12px] leading-none shadow-[0_1px_0_rgba(15,17,19,0.04)] ring-1 transition-all duration-500 ${
+                        highlightedFields.includes(field)
+                          ? 'ring-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)]'
+                          : 'ring-[#D6DADE]'
+                      }`}
+                    >
+                      <span className="text-[#5E6670]">{detailLabels[field]}</span>
+                      <span className="font-medium text-[#0F1113]">{details[field]}</span>
+                    </div>
+                  ))}
+                  {missingPrimaryFields.map((field) => (
+                    <div
+                      key={field}
+                      ref={(node) => {
+                        chipRefs.current[field] = node;
+                      }}
+                      className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-[#FAFBFC] px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
+                        highlightedFields.includes(field)
+                          ? 'border-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)] text-[#0F1113]'
+                          : 'border-[#B0B6BE] text-[#8A919A]'
+                      }`}
+                    >
+                      <span>{detailLabels[field]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {editMode && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Object.keys(detailLabels) as Array<keyof RequirementDetails>).map((field) => (
+                    <label key={field} className="rounded-xl bg-[#FAFBFC] px-3 py-2">
+                      <span className="mb-1 block text-[11px] text-[#5E6670]">{detailLabels[field]}</span>
+                      <input
+                        value={editingDraft[field]}
+                        onChange={(e) => setEditingDraft((prev) => ({ ...prev, [field]: e.target.value }))}
+                        className="h-8 w-full bg-transparent text-xs text-[#0F1113] outline-none"
+                      />
+                    </label>
+                  ))}
+                  <div className="col-span-2 flex items-center gap-2 pt-1">
+                    <button type="button" onClick={saveEditingDraft} className="h-9 rounded-full bg-[#0F1113] px-4 text-sm text-white">Save</button>
+                    <button type="button" onClick={() => setEditMode(false)} className="h-9 rounded-full border border-[#D6DADE] px-4 text-sm text-[#0F1113]">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Conversation + details */}
+        <div
+          ref={suggestionsScrollRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC]"
+          style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
+        >
+          <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={
+                  message.role === 'user'
+                    ? 'ml-auto max-w-[85%] rounded-2xl bg-[#1D1E20] px-3.5 py-2.5 text-[14px] leading-5 text-white'
+                    : 'mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113]'
+                }
+              >
+                {message.role === 'assistant' ? renderAssistantMessage(message.text) : message.text}
+              </div>
+            ))}
+            {isExtracting && (
+              <div className="mr-auto inline-flex items-center gap-2 rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] text-[#0F1113]">
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:300ms]" />
+                </div>
+                <span>Extracting details...</span>
+              </div>
+            )}
+            {hasExtraction && isQuoteReady && (
+              <div className="pt-0.5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToQuotes}
+                  className="h-9 rounded-full bg-[#0F1113] px-4 text-sm"
+                >
+                  <span className="shimmer-text">{`See ${quoteCount} Quotes`}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom input */}
+        <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
+          {messages.length === 0 && (
+            <p className="mb-1.5 text-[12px] text-[#5E6670]">
+              Type naturally and we will capture important details for better quotes.
+            </p>
+          )}
+          {(filteredSuggestions.length > 0 || guidancePrompts.length > 0) && (
+            <div className="mb-1.5 rounded-[18px] border border-[#D6DADE] bg-[#F3F5F7] p-[2px] shadow-[0_1px_2px_rgba(15,17,19,0.04)]">
+              <div className="overflow-hidden rounded-[16px] bg-[#FFFFFF]">
+                {guidancePrompts.slice(0, 3).map((prompt, index) => (
+                  <button
+                    key={`${prompt.key}-${prompt.text}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleGuidancePromptClick(prompt.text)}
+                    className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
+                      index !== guidancePrompts.slice(0, 3).length - 1 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
+                    }`}
+                  >
+                    <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
+                    <span className="min-w-0 whitespace-normal break-words leading-5">{prompt.text}</span>
+                  </button>
+                ))}
+                {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+                  <button
+                    key={suggestion.text}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
+                      index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-[#D6DADE]' : ''
+                    }`}
+                  >
+                    <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
+                    <span className="min-w-0 whitespace-normal break-words leading-5">{suggestion.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {attachments.length > 0 && (
+            <div className="mb-1.5 flex flex-wrap gap-2">
+              {attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#F3F5F7] px-3 py-1.5 text-[12px] text-[#0F1113]"
+                >
+                  <span className="max-w-40 truncate">
+                    {attachment.kind === 'image' ? 'Image' : 'File'}: {attachment.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(attachment.id)}
+                    className="flex h-4 w-4 items-center justify-center rounded-full text-[#5E6670]"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)]">
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFFFFF] text-[#0F1113] shadow-[0_1px_2px_rgba(15,17,19,0.06)] ring-1 ring-[#D6DADE] flex-shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+                onChange={handleFilePick}
+                className="hidden"
+              />
+              <div className="relative min-w-0 flex-1">
+                <div
+                  ref={inputSizerRef}
+                  className="invisible absolute left-0 top-0 -z-10 w-full whitespace-pre-wrap break-words p-0 m-0 text-[14px] leading-5"
+                  aria-hidden="true"
+                />
+                {ghost && query.length > 0 && (
+                  <div className="absolute inset-x-0 top-0 pointer-events-none z-0 whitespace-pre-wrap break-words text-[14px] leading-5">
+                    <span className="text-transparent">{query}</span>
+                    <span className="text-[#B0B6BE]">{ghost.slice(query.length)}</span>
+                  </div>
+                )}
+                <textarea
+                  ref={inputRef}
+                  autoFocus
+                  rows={1}
+                  value={query}
+                  onChange={(e) => handleQueryChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Describe your car and requirement..."
+                  className="relative z-10 m-0 block h-5 min-h-5 w-full resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
+                disabled={!canSubmit}
+                className={`flex h-11 w-11 items-center justify-center rounded-full transition-transform flex-shrink-0 ${
+                  canSubmit
+                    ? 'bg-[#0F1113] shadow-[0_8px_18px_rgba(15,17,19,0.22)] active:scale-[0.98]'
+                    : 'bg-[#B0B6BE] cursor-not-allowed'
+                }`}
+              >
+                  <SendHorizonal className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Trigger mode: only show the collapsed trigger on the home page
   return (
-    <>
-      {/* Collapsed trigger on home page */}
-      <div className="space-y-2.5 overflow-visible py-5">
+    <div className="space-y-2.5 overflow-visible py-5">
         <div className="px-5">
           <p className="text-[16px] text-[#0F1113] font-bold mb-1.5">Tell us your requirement</p>
         </div>
@@ -961,275 +1212,5 @@ export function SmartVehicleInput() {
           </button>
         </div>
       </div>
-
-      {/* Full-screen overlay */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            ref={overlayRef}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="fixed inset-x-0 z-50 overflow-hidden bg-white flex flex-col"
-            style={{
-              top: `${viewportOffsetTop}px`,
-              height: viewportHeight ? `${viewportHeight}px` : '100svh',
-            }}
-          >
-            {/* Header */}
-            <div ref={headerRef}>
-              <PageHeaderBar
-                title="Your requirements"
-                subtitle="Tell us about your car in detail"
-                onBack={closeExpanded}
-              />
-            </div>
-
-            <div ref={questionRef} className="relative z-10 bg-[#F3F5F7] px-5 pt-3 pb-3 shadow-[0_14px_30px_rgba(15,17,19,0.10)] flex-shrink-0">
-              {!hasExtraction ? (
-                <p className="text-[36px] leading-tight font-bold text-[#0F1113]">
-                  What car do you own?
-                </p>
-              ) : (
-                <>
-                  <div className="mb-1.5 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[16px] leading-5 font-semibold text-[#0F1113]">
-                        {visiblePrimaryFields.length > 0 ? visiblePrimaryFields.map((field) => details[field]).join(' · ') : 'Extracting vehicle details'}
-                      </p>
-                      <p className="text-[11px] text-[#8A919A]">{coreStatusText}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingDraft(details);
-                        setEditMode((prev) => !prev);
-                      }}
-                      className="inline-flex h-7 items-center gap-1 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-2.5 text-[11px] text-[#0F1113]"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                    </button>
-                  </div>
-                  <div className="-mx-5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    <div ref={detailRailRef} className="flex min-w-max gap-1.5 pb-0.5">
-                      {visibleSecondaryFields.map((field) => (
-                        <div
-                          key={field}
-                          ref={(node) => {
-                            chipRefs.current[field] = node;
-                          }}
-                          className={`inline-flex items-center gap-1 rounded-full bg-[#FFFFFF] px-2.5 py-1.5 text-[12px] leading-none shadow-[0_1px_0_rgba(15,17,19,0.04)] ring-1 transition-all duration-500 ${
-                            highlightedFields.includes(field)
-                              ? 'ring-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)]'
-                              : 'ring-[#D6DADE]'
-                          }`}
-                        >
-                          <span className="text-[#5E6670]">{detailLabels[field]}</span>
-                          <span className="font-medium text-[#0F1113]">{details[field]}</span>
-                        </div>
-                      ))}
-                      {missingPrimaryFields.map((field) => (
-                        <div
-                          key={field}
-                          ref={(node) => {
-                            chipRefs.current[field] = node;
-                          }}
-                          className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-[#FAFBFC] px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
-                            highlightedFields.includes(field)
-                              ? 'border-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)] text-[#0F1113]'
-                              : 'border-[#B0B6BE] text-[#8A919A]'
-                          }`}
-                        >
-                          <span>{detailLabels[field]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {editMode && (
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {(Object.keys(detailLabels) as Array<keyof RequirementDetails>).map((field) => (
-                        <label key={field} className="rounded-xl bg-[#FAFBFC] px-3 py-2">
-                          <span className="mb-1 block text-[11px] text-[#5E6670]">{detailLabels[field]}</span>
-                          <input
-                            value={editingDraft[field]}
-                            onChange={(e) => setEditingDraft((prev) => ({ ...prev, [field]: e.target.value }))}
-                            className="h-8 w-full bg-transparent text-xs text-[#0F1113] outline-none"
-                          />
-                        </label>
-                      ))}
-                      <div className="col-span-2 flex items-center gap-2 pt-1">
-                        <button type="button" onClick={saveEditingDraft} className="h-9 rounded-full bg-[#0F1113] px-4 text-sm text-white">Save</button>
-                        <button type="button" onClick={() => setEditMode(false)} className="h-9 rounded-full border border-[#D6DADE] px-4 text-sm text-[#0F1113]">Cancel</button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Conversation + details */}
-            <div
-              ref={suggestionsScrollRef}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC]"
-              style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
-            >
-              <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={
-                      message.role === 'user'
-                        ? 'ml-auto max-w-[85%] rounded-2xl bg-[#1D1E20] px-3.5 py-2.5 text-[14px] leading-5 text-white'
-                        : 'mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113]'
-                    }
-                  >
-                    {message.role === 'assistant' ? renderAssistantMessage(message.text) : message.text}
-                  </div>
-                ))}
-                {isExtracting && (
-                  <div className="mr-auto inline-flex items-center gap-2 rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] text-[#0F1113]">
-                    <div className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:300ms]" />
-                    </div>
-                    <span>Extracting details...</span>
-                  </div>
-                )}
-                {hasExtraction && isQuoteReady && (
-                  <div className="pt-0.5 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={goToQuotes}
-                      className="h-9 rounded-full bg-[#0F1113] px-4 text-sm"
-                    >
-                      <span className="shimmer-text">{`See ${quoteCount} Quotes`}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom fixed input */}
-            <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
-              {messages.length === 0 && (
-                <p className="mb-1.5 text-[12px] text-[#5E6670]">
-                  Type naturally and we will capture important details for better quotes.
-                </p>
-              )}
-              {(filteredSuggestions.length > 0 || guidancePrompts.length > 0) && (
-                <div className="mb-1.5 rounded-[18px] border border-[#D6DADE] bg-[#F3F5F7] p-[2px] shadow-[0_1px_2px_rgba(15,17,19,0.04)]">
-                  <div className="overflow-hidden rounded-[16px] bg-[#FFFFFF]">
-                    {guidancePrompts.slice(0, 3).map((prompt, index) => (
-                      <button
-                        key={`${prompt.key}-${prompt.text}`}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleGuidancePromptClick(prompt.text)}
-                        className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
-                          index !== guidancePrompts.slice(0, 3).length - 1 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
-                        }`}
-                      >
-                        <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
-                        <span className="min-w-0 whitespace-normal break-words leading-5">{prompt.text}</span>
-                      </button>
-                    ))}
-                    {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
-                      <button
-                        key={suggestion.text}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
-                          index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-[#D6DADE]' : ''
-                        }`}
-                      >
-                        <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
-                        <span className="min-w-0 whitespace-normal break-words leading-5">{suggestion.text}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {attachments.length > 0 && (
-                <div className="mb-1.5 flex flex-wrap gap-2">
-                  {attachments.map((attachment) => (
-                    <div
-                      key={attachment.id}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#F3F5F7] px-3 py-1.5 text-[12px] text-[#0F1113]"
-                    >
-                      <span className="max-w-40 truncate">
-                        {attachment.kind === 'image' ? 'Image' : 'File'}: {attachment.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeAttachment(attachment.id)}
-                        className="flex h-4 w-4 items-center justify-center rounded-full text-[#5E6670]"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)]">
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFFFFF] text-[#0F1113] shadow-[0_1px_2px_rgba(15,17,19,0.06)] ring-1 ring-[#D6DADE] flex-shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
-                    onChange={handleFilePick}
-                    className="hidden"
-                  />
-                  <div className="relative min-w-0 flex-1">
-                    <div
-                      ref={inputSizerRef}
-                      className="invisible absolute left-0 top-0 -z-10 w-full whitespace-pre-wrap break-words p-0 m-0 text-[14px] leading-5"
-                      aria-hidden="true"
-                    />
-                    {ghost && query.length > 0 && (
-                      <div className="absolute inset-x-0 top-0 pointer-events-none z-0 whitespace-pre-wrap break-words text-[14px] leading-5">
-                        <span className="text-transparent">{query}</span>
-                        <span className="text-[#B0B6BE]">{ghost.slice(query.length)}</span>
-                      </div>
-                    )}
-                    <textarea
-                      ref={inputRef}
-                      autoFocus
-                      rows={1}
-                      value={query}
-                      onChange={(e) => handleQueryChange(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Describe your car and requirement..."
-                      className="relative z-10 m-0 block h-5 min-h-5 w-full resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleSubmit()}
-                    disabled={!canSubmit}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full transition-transform flex-shrink-0 ${
-                      canSubmit
-                        ? 'bg-[#0F1113] shadow-[0_8px_18px_rgba(15,17,19,0.22)] active:scale-[0.98]'
-                        : 'bg-[#B0B6BE] cursor-not-allowed'
-                    }`}
-                  >
-                      <SendHorizonal className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
   );
 }

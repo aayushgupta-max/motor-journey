@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { flushSync } from 'react-dom';
-import { ArrowLeft, SendHorizonal, Sparkles, Pencil, Check, Plus, X } from 'lucide-react';
+import { SendHorizonal, Sparkles, Pencil, Check, Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PageHeaderBar } from './PageHeaderBar';
 import {
   carBrands,
   getYearRange,
@@ -481,9 +482,9 @@ function renderAssistantMessage(text: string) {
   return (
     <div className="space-y-1.5">
       <p className="text-[14px] leading-5">{intro}</p>
-      <p className="text-[14px] font-semibold leading-5 text-[#2D2D2D]">{emphasis}</p>
+      <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">{emphasis}</p>
       {rest.map((line, index) => (
-        <p key={`${line}-${index}`} className="text-[14px] leading-5 text-[#2D2D2D]">
+        <p key={`${line}-${index}`} className="text-[14px] leading-5 text-[#0F1113]">
           {line}
         </p>
       ))}
@@ -885,7 +886,7 @@ export function SmartVehicleInput() {
       {/* Collapsed trigger on home page */}
       <div className="space-y-2.5 overflow-visible py-5">
         <div className="px-5">
-          <p className="text-[16px] text-[#2D2D2D] font-bold mb-1.5">Tell us your requirement</p>
+          <p className="text-[16px] text-[#0F1113] font-bold mb-1.5">Tell us your requirement</p>
         </div>
 
         <div className="overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -895,11 +896,11 @@ export function SmartVehicleInput() {
                 <button
                   key={brand.id}
                   onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-white/70 border border-black/5 px-2.5 py-1.5 text-left hover:border-black/10 hover:bg-white transition-all"
+                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] border border-[#D6DADE] px-2.5 py-1.5 text-left hover:border-[#B0B6BE] hover:bg-[#FAFBFC] transition-all"
                 >
-                  <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
+                  <span className="whitespace-nowrap text-[13px] text-[#4B525A]">
                     <span className="font-normal">I have a </span>
-                    <span className="font-medium text-[#374151]">{brand.name}</span>
+                    <span className="font-medium text-[#1D1E20]">{brand.name}</span>
                     <span className="font-normal">...</span>
                   </span>
                 </button>
@@ -910,11 +911,11 @@ export function SmartVehicleInput() {
                 <button
                   key={brand.id}
                   onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-white/70 border border-black/5 px-2.5 py-1.5 text-left hover:border-black/10 hover:bg-white transition-all"
+                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] border border-[#D6DADE] px-2.5 py-1.5 text-left hover:border-[#B0B6BE] hover:bg-[#FAFBFC] transition-all"
                 >
-                  <span className="whitespace-nowrap text-[13px] text-[#4B5563]">
+                  <span className="whitespace-nowrap text-[13px] text-[#4B525A]">
                     <span className="font-normal">I have a </span>
-                    <span className="font-medium text-[#374151]">{brand.name}</span>
+                    <span className="font-medium text-[#1D1E20]">{brand.name}</span>
                     <span className="font-normal">...</span>
                   </span>
                 </button>
@@ -926,15 +927,15 @@ export function SmartVehicleInput() {
         <div className="px-5">
           <button
             onClick={() => openExpanded()}
-            className="w-full rounded-[18px] border border-gray-200 bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-gray-300 hover:bg-gray-50"
+            className="w-full rounded-[18px] border border-[#D6DADE] bg-[#FFFFFF] px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(15,17,19,0.04)] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC]"
           >
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm leading-5 text-gray-400">
+                <p className="text-sm leading-5 text-[#8A919A]">
                   Write about your car and insurance requirement...
                 </p>
               </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2D2D2D]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F1113]">
                 <SendHorizonal className="w-4 h-4 text-white" />
               </div>
             </div>
@@ -955,34 +956,27 @@ export function SmartVehicleInput() {
             style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
           >
             {/* Header */}
-            <div ref={headerRef} className="border-b border-gray-100 bg-white flex-shrink-0">
-              <div className="container mx-auto px-5 py-2.5 max-w-5xl flex items-center gap-3">
-                <button
-                  onClick={closeExpanded}
-                  className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center flex-shrink-0"
-                >
-                  <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
-                </button>
-                <div>
-                  <p className="text-[16px] text-[#2D2D2D] font-bold">Your requirements</p>
-                  <p className="text-xs text-gray-400">Tell us about your car in detail</p>
-                </div>
-              </div>
+            <div ref={headerRef}>
+              <PageHeaderBar
+                title="Your requirements"
+                subtitle="Tell us about your car in detail"
+                onBack={closeExpanded}
+              />
             </div>
 
-            <div ref={questionRef} className="relative z-10 bg-[#F7F7F7] px-5 pt-3 pb-3 shadow-[0_14px_30px_rgba(15,23,42,0.10)] flex-shrink-0">
+            <div ref={questionRef} className="relative z-10 bg-[#F3F5F7] px-5 pt-3 pb-3 shadow-[0_14px_30px_rgba(15,17,19,0.10)] flex-shrink-0">
               {!hasExtraction ? (
-                <p className="text-[36px] leading-tight font-bold text-[#2D2D2D]">
+                <p className="text-[36px] leading-tight font-bold text-[#0F1113]">
                   What car do you own?
                 </p>
               ) : (
                 <>
                   <div className="mb-1.5 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[16px] leading-5 font-semibold text-[#2D2D2D]">
+                      <p className="text-[16px] leading-5 font-semibold text-[#0F1113]">
                         {visiblePrimaryFields.length > 0 ? visiblePrimaryFields.map((field) => details[field]).join(' · ') : 'Extracting vehicle details'}
                       </p>
-                      <p className="text-[11px] text-gray-400">{coreStatusText}</p>
+                      <p className="text-[11px] text-[#8A919A]">{coreStatusText}</p>
                     </div>
                     <button
                       type="button"
@@ -990,7 +984,7 @@ export function SmartVehicleInput() {
                         setEditingDraft(details);
                         setEditMode((prev) => !prev);
                       }}
-                      className="inline-flex h-7 items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 text-[11px] text-[#2D2D2D]"
+                      className="inline-flex h-7 items-center gap-1 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-2.5 text-[11px] text-[#0F1113]"
                     >
                       <Pencil className="h-3 w-3" />
                       Edit
@@ -1004,14 +998,14 @@ export function SmartVehicleInput() {
                           ref={(node) => {
                             chipRefs.current[field] = node;
                           }}
-                          className={`inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1.5 text-[12px] leading-none shadow-[0_1px_0_rgba(15,23,42,0.04)] ring-1 transition-all duration-500 ${
+                          className={`inline-flex items-center gap-1 rounded-full bg-[#FFFFFF] px-2.5 py-1.5 text-[12px] leading-none shadow-[0_1px_0_rgba(15,17,19,0.04)] ring-1 transition-all duration-500 ${
                             highlightedFields.includes(field)
-                              ? 'ring-[#2D2D2D] shadow-[0_0_0_3px_rgba(45,45,45,0.12)]'
-                              : 'ring-black/6'
+                              ? 'ring-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)]'
+                              : 'ring-[#D6DADE]'
                           }`}
                         >
-                          <span className="text-gray-500">{detailLabels[field]}</span>
-                          <span className="font-medium text-[#2D2D2D]">{details[field]}</span>
+                          <span className="text-[#5E6670]">{detailLabels[field]}</span>
+                          <span className="font-medium text-[#0F1113]">{details[field]}</span>
                         </div>
                       ))}
                       {missingPrimaryFields.map((field) => (
@@ -1020,10 +1014,10 @@ export function SmartVehicleInput() {
                           ref={(node) => {
                             chipRefs.current[field] = node;
                           }}
-                          className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-white/70 px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
+                          className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-[#FAFBFC] px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
                             highlightedFields.includes(field)
-                              ? 'border-[#2D2D2D] shadow-[0_0_0_3px_rgba(45,45,45,0.12)] text-[#2D2D2D]'
-                              : 'border-[#CFCFCF] text-[#8A8A8A]'
+                              ? 'border-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)] text-[#0F1113]'
+                              : 'border-[#B0B6BE] text-[#8A919A]'
                           }`}
                         >
                           <span>{detailLabels[field]}</span>
@@ -1034,18 +1028,18 @@ export function SmartVehicleInput() {
                   {editMode && (
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       {(Object.keys(detailLabels) as Array<keyof RequirementDetails>).map((field) => (
-                        <label key={field} className="rounded-xl bg-[#FAFAFA] px-3 py-2">
-                          <span className="mb-1 block text-[11px] text-gray-500">{detailLabels[field]}</span>
+                        <label key={field} className="rounded-xl bg-[#FAFBFC] px-3 py-2">
+                          <span className="mb-1 block text-[11px] text-[#5E6670]">{detailLabels[field]}</span>
                           <input
                             value={editingDraft[field]}
                             onChange={(e) => setEditingDraft((prev) => ({ ...prev, [field]: e.target.value }))}
-                            className="h-8 w-full bg-transparent text-xs text-[#2D2D2D] outline-none"
+                            className="h-8 w-full bg-transparent text-xs text-[#0F1113] outline-none"
                           />
                         </label>
                       ))}
                       <div className="col-span-2 flex items-center gap-2 pt-1">
-                        <button type="button" onClick={saveEditingDraft} className="h-9 rounded-full bg-[#2D2D2D] px-4 text-sm text-white">Save</button>
-                        <button type="button" onClick={() => setEditMode(false)} className="h-9 rounded-full border border-gray-200 px-4 text-sm text-[#2D2D2D]">Cancel</button>
+                        <button type="button" onClick={saveEditingDraft} className="h-9 rounded-full bg-[#0F1113] px-4 text-sm text-white">Save</button>
+                        <button type="button" onClick={() => setEditMode(false)} className="h-9 rounded-full border border-[#D6DADE] px-4 text-sm text-[#0F1113]">Cancel</button>
                       </div>
                     </div>
                   )}
@@ -1056,7 +1050,7 @@ export function SmartVehicleInput() {
             {/* Conversation + details */}
             <div
               ref={suggestionsScrollRef}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFAFA]"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC]"
               style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
             >
               <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
@@ -1065,19 +1059,19 @@ export function SmartVehicleInput() {
                     key={message.id}
                     className={
                       message.role === 'user'
-                        ? 'ml-auto max-w-[85%] rounded-2xl bg-[#2D2D2D] px-3.5 py-2.5 text-[14px] leading-5 text-white'
-                        : 'mr-auto max-w-[85%] rounded-2xl border border-gray-200 bg-white px-3.5 py-2.5 text-[14px] leading-5 text-[#2D2D2D]'
+                        ? 'ml-auto max-w-[85%] rounded-2xl bg-[#1D1E20] px-3.5 py-2.5 text-[14px] leading-5 text-white'
+                        : 'mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113]'
                     }
                   >
                     {message.role === 'assistant' ? renderAssistantMessage(message.text) : message.text}
                   </div>
                 ))}
                 {isExtracting && (
-                  <div className="mr-auto inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3.5 py-2.5 text-[14px] text-[#2D2D2D]">
+                  <div className="mr-auto inline-flex items-center gap-2 rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] text-[#0F1113]">
                     <div className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#2D2D2D]/45 [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#2D2D2D]/45 [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#2D2D2D]/45 [animation-delay:300ms]" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:0ms]" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:150ms]" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:300ms]" />
                     </div>
                     <span>Extracting details...</span>
                   </div>
@@ -1087,7 +1081,7 @@ export function SmartVehicleInput() {
                     <button
                       type="button"
                       onClick={goToQuotes}
-                      className="h-9 rounded-full bg-[#2D2D2D] px-4 text-sm text-white"
+                      className="h-9 rounded-full bg-[#0F1113] px-4 text-sm text-white"
                     >
                       {`See ${quoteCount} Quotes`}
                     </button>
@@ -1097,25 +1091,25 @@ export function SmartVehicleInput() {
             </div>
 
             {/* Bottom fixed input */}
-            <div ref={inputBarRef} className="bg-white border-t border-gray-100 px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
+            <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
               {messages.length === 0 && (
-                <p className="mb-1.5 text-[12px] text-gray-500">
+                <p className="mb-1.5 text-[12px] text-[#5E6670]">
                   Type naturally and we will capture important details for better quotes.
                 </p>
               )}
               {(filteredSuggestions.length > 0 || guidancePrompts.length > 0) && (
-                <div className="mb-1.5 rounded-[18px] border border-gray-200 bg-[#FAFAFA] p-[2px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                  <div className="overflow-hidden rounded-[16px] bg-white">
+                <div className="mb-1.5 rounded-[18px] border border-[#D6DADE] bg-[#F3F5F7] p-[2px] shadow-[0_1px_2px_rgba(15,17,19,0.04)]">
+                  <div className="overflow-hidden rounded-[16px] bg-[#FFFFFF]">
                     {guidancePrompts.slice(0, 3).map((prompt, index) => (
                       <button
                         key={`${prompt.key}-${prompt.text}`}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleGuidancePromptClick(prompt.text)}
-                        className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B5563] transition-colors hover:bg-[#F7F7F7] ${
-                          index !== guidancePrompts.slice(0, 3).length - 1 || filteredSuggestions.length > 0 ? 'border-b border-black/5' : ''
+                        className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
+                          index !== guidancePrompts.slice(0, 3).length - 1 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
                         }`}
                       >
-                        <Sparkles className="mt-0.5 h-4 w-4 text-gray-300 flex-shrink-0" />
+                        <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
                         <span className="min-w-0 whitespace-normal break-words leading-5">{prompt.text}</span>
                       </button>
                     ))}
@@ -1124,11 +1118,11 @@ export function SmartVehicleInput() {
                         key={suggestion.text}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B5563] transition-colors hover:bg-[#F7F7F7] ${
-                          index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-black/5' : ''
+                        className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
+                          index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-[#D6DADE]' : ''
                         }`}
                       >
-                        <Sparkles className="mt-0.5 h-4 w-4 text-gray-300 flex-shrink-0" />
+                        <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
                         <span className="min-w-0 whitespace-normal break-words leading-5">{suggestion.text}</span>
                       </button>
                     ))}
@@ -1140,7 +1134,7 @@ export function SmartVehicleInput() {
                   {attachments.map((attachment) => (
                     <div
                       key={attachment.id}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#F3F4F6] px-3 py-1.5 text-[12px] text-[#2D2D2D]"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#F3F5F7] px-3 py-1.5 text-[12px] text-[#0F1113]"
                     >
                       <span className="max-w-40 truncate">
                         {attachment.kind === 'image' ? 'Image' : 'File'}: {attachment.name}
@@ -1148,7 +1142,7 @@ export function SmartVehicleInput() {
                       <button
                         type="button"
                         onClick={() => removeAttachment(attachment.id)}
-                        className="flex h-4 w-4 items-center justify-center rounded-full text-gray-500"
+                        className="flex h-4 w-4 items-center justify-center rounded-full text-[#5E6670]"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -1156,12 +1150,12 @@ export function SmartVehicleInput() {
                   ))}
                 </div>
               )}
-              <div className="w-full rounded-[22px] border border-gray-200 bg-[#F7F7F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-all focus-within:border-[#2D2D2D] focus-within:bg-white focus-within:shadow-[0_10px_26px_rgba(15,23,42,0.10)]">
+              <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)]">
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2D2D2D] shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/5 flex-shrink-0"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFFFFF] text-[#0F1113] shadow-[0_1px_2px_rgba(15,17,19,0.06)] ring-1 ring-[#D6DADE] flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -1182,7 +1176,7 @@ export function SmartVehicleInput() {
                     {ghost && query.length > 0 && (
                       <div className="absolute inset-x-0 top-0 pointer-events-none z-0 whitespace-pre-wrap break-words text-[14px] leading-5">
                         <span className="text-transparent">{query}</span>
-                        <span className="text-gray-300">{ghost.slice(query.length)}</span>
+                        <span className="text-[#B0B6BE]">{ghost.slice(query.length)}</span>
                       </div>
                     )}
                     <textarea
@@ -1193,7 +1187,7 @@ export function SmartVehicleInput() {
                       onChange={(e) => handleQueryChange(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder="Describe your car and requirement..."
-                      className="relative z-10 m-0 block h-5 min-h-5 w-full resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-5 text-[#2D2D2D] placeholder:text-gray-400 outline-none"
+                      className="relative z-10 m-0 block h-5 min-h-5 w-full resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
                     />
                   </div>
                   <button
@@ -1202,8 +1196,8 @@ export function SmartVehicleInput() {
                     disabled={!canSubmit}
                     className={`flex h-11 w-11 items-center justify-center rounded-full transition-transform flex-shrink-0 ${
                       canSubmit
-                        ? 'bg-[#2D2D2D] shadow-[0_8px_18px_rgba(45,45,45,0.22)] active:scale-[0.98]'
-                        : 'bg-[#D4D4D4] cursor-not-allowed'
+                        ? 'bg-[#0F1113] shadow-[0_8px_18px_rgba(15,17,19,0.22)] active:scale-[0.98]'
+                        : 'bg-[#B0B6BE] cursor-not-allowed'
                     }`}
                   >
                       <SendHorizonal className="w-4 h-4 text-white" />

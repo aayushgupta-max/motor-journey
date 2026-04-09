@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Header } from '../components/Header';
-import { ArrowLeft, Star, Check, Lock, X, Eye, EyeOff, ClipboardList, Pencil } from 'lucide-react';
+import { Star, Check, Lock, X, Eye, EyeOff, ClipboardList, Pencil } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SlidersHorizontal, ArrowUpDown, ChevronDown, Search } from 'lucide-react';
 import { DLUploadBottomSheet } from '../components/DLUploadBottomSheet';
@@ -10,6 +10,7 @@ import { AiAssistantButton } from '../components/AiAssistantButton';
 import { QuoteConfidenceCard } from '../components/QuoteConfidenceCard';
 import { FlipPrice } from '../components/FlipPrice';
 import { useAuth } from '../components/AuthContext';
+import { PageHeaderBar } from '../components/PageHeaderBar';
 
 const allFilterOptions = [
   { label: 'Comprehensive', category: 'Coverage' },
@@ -32,8 +33,8 @@ const quotes = [
     id: 1,
     provider: 'Orient Insurance',
     initial: 'OI',
-    color: '#666666',
-    bg: '#ECECEC',
+    color: '#3A3F45',
+    bg: '#F3F5F7',
     rating: 4.9,
     price: 1249,
     optimizedPrice: 1049,
@@ -46,8 +47,8 @@ const quotes = [
     id: 2,
     provider: 'AXA Gulf',
     initial: 'AX',
-    color: '#555555',
-    bg: '#E8E8E8',
+    color: '#4B525A',
+    bg: '#FAFBFC',
     rating: 4.8,
     price: 1389,
     optimizedPrice: 1159,
@@ -60,8 +61,8 @@ const quotes = [
     id: 3,
     provider: 'Dubai Insurance',
     initial: 'DI',
-    color: '#777777',
-    bg: '#F0F0F0',
+    color: '#5E6670',
+    bg: '#F3F5F7',
     rating: 4.7,
     price: 1425,
     optimizedPrice: 1199,
@@ -74,8 +75,8 @@ const quotes = [
     id: 4,
     provider: 'Oman Insurance',
     initial: 'OM',
-    color: '#888888',
-    bg: '#EFEFEF',
+    color: '#5E6670',
+    bg: '#FAFBFC',
     rating: 4.8,
     price: 1510,
     optimizedPrice: 1289,
@@ -88,8 +89,8 @@ const quotes = [
     id: 5,
     provider: 'National General',
     initial: 'NG',
-    color: '#999999',
-    bg: '#F2F2F2',
+    color: '#8A919A',
+    bg: '#F3F5F7',
     rating: 4.6,
     price: 1599,
     optimizedPrice: 1349,
@@ -185,34 +186,26 @@ export default function Quotes() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7]">
+    <div className="min-h-screen bg-[#FAFBFC]">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-40">
-        <div className="container mx-auto px-5 py-3 max-w-5xl flex items-center gap-3">
-          <button
-            onClick={() => navigate('/')}
-            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center"
-          >
-            <ArrowLeft className="w-4 h-4 text-[#2D2D2D]" />
-          </button>
-          <div>
-            <p className="text-sm text-[#2D2D2D]">Your Quotes</p>
-            <p className="text-xs text-gray-500">Toyota Camry 2023 · Dubai</p>
-          </div>
-          {isLoggedIn && (
-          <div className="ml-auto">
+      <div className="sticky top-0 z-40">
+        <PageHeaderBar
+          title="Your quotes"
+          subtitle="Toyota Camry 2023 · Dubai"
+          onBack={() => navigate('/')}
+          rightSlot={isLoggedIn ? (
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 0.3 }}
               key={answeredCount}
               className="relative rounded-full p-[2px]"
               style={{
-                background: `conic-gradient(#2D2D2D ${allSurveyDone ? 100 : ((8 + answeredCount) / 12) * 100}%, #D4D4D4 0%)`,
+                background: `conic-gradient(#0F1113 ${allSurveyDone ? 100 : ((8 + answeredCount) / 12) * 100}%, #D6DADE 0%)`,
               }}
             >
-              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${allSurveyDone ? 'bg-[#EFEFEF]' : 'bg-[#F5F5F5]'}`}>
-                <ClipboardList className={`w-3 h-3 ${allSurveyDone ? 'text-[#2D2D2D]' : 'text-[#666666]'}`} />
-                <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#2D2D2D]' : 'text-[#666666]'}`}>{allSurveyDone ? 12 : 8 + answeredCount}/12</span>
+              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${allSurveyDone ? 'bg-[#FAFBFC]' : 'bg-[#F3F5F7]'}`}>
+                <ClipboardList className={`w-3 h-3 ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`} />
+                <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`}>{allSurveyDone ? 12 : 8 + answeredCount}/12</span>
                 <button
                   onClick={() => {
                     setGccSelection(null);
@@ -224,15 +217,14 @@ export default function Quotes() {
                     setSurveyStep(0);
                     setSurveyBadgeDismissed(false);
                   }}
-                  className="ml-0.5 w-5 h-5 rounded-full bg-[#2D2D2D]/10 flex items-center justify-center"
+                  className="ml-0.5 w-5 h-5 rounded-full bg-[#0F1113]/10 flex items-center justify-center"
                 >
-                  <Pencil className="w-2.5 h-2.5 text-[#2D2D2D]" />
+                  <Pencil className="w-2.5 h-2.5 text-[#0F1113]" />
                 </button>
               </div>
             </motion.div>
-          </div>
-          )}
-        </div>
+          ) : undefined}
+        />
       </div>
 
       <div className="container mx-auto px-4 md:px-6 py-4 max-w-5xl">
@@ -249,20 +241,20 @@ export default function Quotes() {
           <div className="flex items-center gap-2 mb-2">
             {/* Full-width search input */}
             <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-[#5E6670] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search insurer..."
-                className={`w-full h-10 pl-8.5 pr-8 rounded-xl bg-white text-xs text-[#2D2D2D] placeholder-gray-300 outline-none border ${searchQuery ? 'border-[#D4D4D4]' : 'border-gray-200/60'}`}
+                className={`w-full h-10 pl-8.5 pr-8 rounded-xl bg-[#FFFFFF] text-xs text-[#0F1113] placeholder:text-[#B0B6BE] outline-none border ${searchQuery ? 'border-[#B0B6BE]' : 'border-[#D6DADE]'}`}
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2"
                 >
-                  <X className="w-3.5 h-3.5 text-gray-300" />
+                  <X className="w-3.5 h-3.5 text-[#B0B6BE]" />
                 </button>
               )}
             </div>
@@ -271,12 +263,12 @@ export default function Quotes() {
             <button
               onClick={() => setShowAllFilters(true)}
               className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${
-                activeFilters.length > 0 ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-white text-gray-500 border border-gray-200/60'
+                activeFilters.length > 0 ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#FFFFFF] text-[#5E6670] border border-[#D6DADE]'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
               {activeFilters.length > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[#D4D4D4] text-[#2D2D2D] text-[9px] flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[#D6DADE] text-[#0F1113] text-[9px] flex items-center justify-center">
                   {activeFilters.length}
                 </span>
               )}
@@ -287,7 +279,7 @@ export default function Quotes() {
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  sortBy !== 'price-low' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-white text-gray-500 border border-gray-200/60'
+                  sortBy !== 'price-low' ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#FFFFFF] text-[#5E6670] border border-[#D6DADE]'
                 }`}
               >
                 <ArrowUpDown className="w-4 h-4" />
@@ -295,7 +287,7 @@ export default function Quotes() {
               {showSortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
-                  <div className="absolute right-0 top-11 z-20 bg-white rounded-xl border border-gray-100 py-1 min-w-[160px] overflow-hidden">
+                  <div className="absolute right-0 top-11 z-20 bg-[#FFFFFF] rounded-xl border border-[#D6DADE] py-1 min-w-[160px] overflow-hidden">
                     {[
                       { value: 'price-low', label: 'Price: Low → High' },
                       { value: 'price-high', label: 'Price: High → Low' },
@@ -305,11 +297,11 @@ export default function Quotes() {
                         key={opt.value}
                         onClick={() => { setSortBy(opt.value as typeof sortBy); setShowSortMenu(false); }}
                         className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between ${
-                          sortBy === opt.value ? 'text-[#2D2D2D] bg-[#F7F7F7]' : 'text-gray-500'
+                          sortBy === opt.value ? 'text-[#0F1113] bg-[#F3F5F7]' : 'text-[#5E6670]'
                         }`}
                       >
                         {opt.label}
-                        {sortBy === opt.value && <Check className="w-3.5 h-3.5 text-[#D4D4D4]" />}
+                        {sortBy === opt.value && <Check className="w-3.5 h-3.5 text-[#0F1113]" />}
                       </button>
                     ))}
                   </div>
@@ -321,7 +313,7 @@ export default function Quotes() {
             {activeFilters.length > 0 && (
               <button
                 onClick={() => setActiveFilters([])}
-                className="h-10 px-3 rounded-xl text-[11px] text-gray-500 hover:text-gray-600 border border-dashed border-gray-200 flex items-center gap-1 flex-shrink-0"
+                className="h-10 px-3 rounded-xl text-[11px] text-[#5E6670] hover:text-[#3A3F45] border border-dashed border-[#D6DADE] flex items-center gap-1 flex-shrink-0"
               >
                 <X className="w-3 h-3" />
                 Clear
@@ -339,8 +331,8 @@ export default function Quotes() {
                   onClick={() => toggleFilter(filter)}
                   className={`flex-shrink-0 h-9 px-4 rounded-xl text-xs transition-all ${
                     isActive
-                      ? 'bg-[#2D2D2D] text-[#D4D4D4]'
-                      : 'bg-white text-gray-500 border border-gray-100'
+                      ? 'bg-[#0F1113] text-[#FFFFFF]'
+                      : 'bg-[#FFFFFF] text-[#5E6670] border border-[#D6DADE]'
                   }`}
                 >
                   {filter}
@@ -380,12 +372,12 @@ export default function Quotes() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl overflow-hidden mb-3 border border-gray-200/60"
+          className="bg-[#FFFFFF] rounded-2xl overflow-hidden mb-3 border border-[#D6DADE]"
         >
           {/* Badge */}
-          <div className="bg-[#D4D4D4] px-4 py-1.5 flex items-center gap-2">
-            <Star className="w-3.5 h-3.5 text-[#2D2D2D]" />
-            <span className="text-xs text-[#2D2D2D]">Best Value · Recommended for you</span>
+          <div className="bg-[#D6DADE] px-4 py-1.5 flex items-center gap-2">
+            <Star className="w-3.5 h-3.5 text-[#0F1113]" />
+            <span className="text-xs text-[#0F1113]">Best Value · Recommended for you</span>
           </div>
 
           <div className="p-4">
@@ -398,19 +390,19 @@ export default function Quotes() {
                   <span className="text-sm" style={{ color: bestQuote.color }}>{bestQuote.initial}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#2D2D2D]">{bestQuote.provider}</p>
+                  <p className="text-sm font-bold text-[#0F1113]">{bestQuote.provider}</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Star className="w-3 h-3 text-gray-500 fill-gray-400" />
-                    <span className="text-xs text-gray-500">{bestQuote.rating}</span>
-                    <span className="text-xs text-gray-500 mx-1">·</span>
-                    <span className="text-xs text-gray-500">{bestQuote.coverage}</span>
+                    <Star className="w-3 h-3 text-[#5E6670] fill-[#B0B6BE]" />
+                    <span className="text-xs text-[#5E6670]">{bestQuote.rating}</span>
+                    <span className="text-xs text-[#5E6670] mx-1">·</span>
+                    <span className="text-xs text-[#5E6670]">{bestQuote.coverage}</span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-500 line-through">AED {bestQuote.originalPrice}</p>
-                <FlipPrice value={allSurveyDone ? bestQuote.optimizedPrice : bestQuote.price} className="text-lg font-bold text-[#2D2D2D]" />
-                <p className="text-[10px] text-[#D4D4D4] bg-[#2D2D2D] px-2 py-0.5 rounded-full mt-1 ml-1 inline-block whitespace-nowrap">
+                <p className="text-xs text-[#5E6670] line-through">AED {bestQuote.originalPrice}</p>
+                <FlipPrice value={allSurveyDone ? bestQuote.optimizedPrice : bestQuote.price} className="text-lg font-bold text-[#0F1113]" />
+                <p className="text-[10px] text-[#FFFFFF] bg-[#0F1113] px-2 py-0.5 rounded-full mt-1 ml-1 inline-block whitespace-nowrap">
                   Save {Math.round(((bestQuote.originalPrice - bestQuote.price) / bestQuote.originalPrice) * 100)}%
                 </p>
               </div>
@@ -419,8 +411,8 @@ export default function Quotes() {
             {/* Features */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               {bestQuote.features.map((f) => (
-                <span key={f} className="inline-flex items-center gap-1 text-xs bg-[#F7F7F7] text-gray-600 px-2.5 py-1 rounded-lg">
-                  <Check className="w-3 h-3 text-[#D4D4D4]" />
+                <span key={f} className="inline-flex items-center gap-1 text-xs bg-[#F3F5F7] text-[#4B525A] px-2.5 py-1 rounded-lg">
+                  <Check className="w-3 h-3 text-[#8A919A]" />
                   {f}
                 </span>
               ))}
@@ -428,13 +420,13 @@ export default function Quotes() {
 
             <div className="flex gap-2">
               <button
-                className="h-10 px-4 rounded-xl bg-[#F0F0F0] text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
+                className="h-10 px-4 rounded-xl bg-[#F3F5F7] text-[#0F1113] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
               >
                 View details
               </button>
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]"
+                className="flex-1 min-w-0 h-10 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-xs transition-all active:scale-[0.98]"
               >
                 <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${bestQuote.optimizedPrice}/yr` : `Starting at AED ${bestQuote.price}/yr`}</span>
               </button>
@@ -453,7 +445,7 @@ export default function Quotes() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.05 }}
-                className={`bg-white rounded-2xl p-4 border border-gray-200/60 ${!unlocked ? 'blur-[6px]' : ''}`}
+                className={`bg-[#FFFFFF] rounded-2xl p-4 border border-[#D6DADE] ${!unlocked ? 'blur-[6px]' : ''}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -464,25 +456,25 @@ export default function Quotes() {
                       <span className="text-sm" style={{ color: quote.color }}>{quote.initial}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#2D2D2D]">{quote.provider}</p>
-                      <p className="text-xs text-gray-500">{quote.coverage}</p>
+                      <p className="text-sm font-bold text-[#0F1113]">{quote.provider}</p>
+                      <p className="text-xs text-[#5E6670]">{quote.coverage}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <FlipPrice value={allSurveyDone ? quote.optimizedPrice : quote.price} className="text-lg font-bold text-[#2D2D2D]" />
+                    <FlipPrice value={allSurveyDone ? quote.optimizedPrice : quote.price} className="text-lg font-bold text-[#0F1113]" />
                   </div>
                 </div>
                 <div className="flex gap-2">
                   {quote.features.slice(0, 2).map((f) => (
-                    <span key={f} className="text-xs bg-[#F7F7F7] text-gray-500 px-2.5 py-1 rounded-lg">{f}</span>
+                    <span key={f} className="text-xs bg-[#F3F5F7] text-[#5E6670] px-2.5 py-1 rounded-lg">{f}</span>
                   ))}
                 </div>
                 {unlocked && (
                   <div className="flex gap-2 mt-3">
-                    <button className="h-10 px-4 rounded-xl bg-[#F0F0F0] text-[#2D2D2D] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
+                    <button className="h-10 px-4 rounded-xl bg-[#F3F5F7] text-[#0F1113] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
                       View details
                     </button>
-                    <button className="flex-1 min-w-0 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-xs transition-all active:scale-[0.98]">
+                    <button className="flex-1 min-w-0 h-10 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-xs transition-all active:scale-[0.98]">
                       <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${quote.optimizedPrice}/yr` : `Starting at AED ${quote.price}/yr`}</span>
                     </button>
                   </div>
@@ -498,27 +490,27 @@ export default function Quotes() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
-              className="bg-white rounded-2xl p-4 mx-4 max-w-sm w-full text-center shadow-lg shadow-black/5"
+              className="bg-[#FFFFFF] rounded-2xl p-4 mx-4 max-w-sm w-full text-center shadow-lg shadow-black/5 border border-[#D6DADE]"
             >
-              <div className="w-11 h-11 rounded-xl bg-[#EFEFEF] flex items-center justify-center mx-auto mb-3">
-                <Lock className="w-5 h-5 text-[#2D2D2D]" />
+              <div className="w-11 h-11 rounded-xl bg-[#F3F5F7] flex items-center justify-center mx-auto mb-3">
+                <Lock className="w-5 h-5 text-[#0F1113]" />
               </div>
-              <h3 className="text-base text-[#2D2D2D] mb-0.5">
+              <h3 className="text-base text-[#0F1113] mb-0.5">
                 {remainingQuotes.length} more quotes available
               </h3>
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-[#5E6670] mb-3">
                 Sign in to unlock all quotes, compare plans and buy your policy instantly
               </p>
               <div
                 onClick={() => setShowLoginModal(true)}
-                className="w-full h-10 rounded-xl bg-[#F7F7F7] flex items-center gap-2 px-3 mb-3 cursor-pointer"
+                className="w-full h-10 rounded-xl bg-[#F3F5F7] flex items-center gap-2 px-3 mb-3 cursor-pointer"
               >
-                <span className="text-xs text-gray-500">🇦🇪 +971</span>
-                <span className="text-xs text-gray-500">Enter mobile number</span>
+                <span className="text-xs text-[#5E6670]">🇦🇪 +971</span>
+                <span className="text-xs text-[#5E6670]">Enter mobile number</span>
               </div>
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="w-full h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98]"
+                className="w-full h-10 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98]"
               >
                 <Lock className="w-4 h-4" />
                 Sign in to Unlock
@@ -581,28 +573,28 @@ function AllFiltersSheet({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-[#0F1113]/45" onClick={onClose} />
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md mx-0 sm:mx-4 z-10 max-h-[80vh] flex flex-col"
+        className="relative bg-[#FFFFFF] rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md mx-0 sm:mx-4 z-10 max-h-[80vh] flex flex-col border border-[#D6DADE]"
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 sm:hidden">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+          <div className="w-10 h-1 bg-[#D6DADE] rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg text-[#2D2D2D]">All Filters</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#D6DADE]">
+          <h3 className="text-lg text-[#0F1113]">All Filters</h3>
           <div className="flex items-center gap-3">
             {activeFilters.length > 0 && (
-              <button onClick={onClear} className="text-xs text-gray-500 hover:text-gray-600">
+              <button onClick={onClear} className="text-xs text-[#5E6670] hover:text-[#3A3F45]">
                 Clear all
               </button>
             )}
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center">
-              <X className="w-4 h-4 text-gray-500" />
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F3F5F7] flex items-center justify-center">
+              <X className="w-4 h-4 text-[#5E6670]" />
             </button>
           </div>
         </div>
@@ -611,7 +603,7 @@ function AllFiltersSheet({
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
           {grouped.map(({ category, filters }) => (
             <div key={category}>
-              <p className="text-xs text-gray-500 mb-2.5">{category}</p>
+              <p className="text-xs text-[#5E6670] mb-2.5">{category}</p>
               <div className="flex flex-wrap gap-2">
                 {filters.map(({ label }) => {
                   const isActive = activeFilters.includes(label);
@@ -621,8 +613,8 @@ function AllFiltersSheet({
                       onClick={() => toggleFilter(label)}
                       className={`h-9 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 ${
                         isActive
-                          ? 'bg-[#2D2D2D] text-[#D4D4D4]'
-                          : 'bg-[#F7F7F7] text-gray-600'
+                          ? 'bg-[#0F1113] text-[#FFFFFF]'
+                          : 'bg-[#F3F5F7] text-[#4B525A]'
                       }`}
                     >
                       {isActive && <Check className="w-3 h-3" />}
@@ -636,10 +628,10 @@ function AllFiltersSheet({
         </div>
 
         {/* Apply button */}
-        <div className="px-6 py-4 border-t border-gray-100">
+        <div className="px-6 py-4 border-t border-[#D6DADE]">
           <button
             onClick={onClose}
-            className="w-full h-12 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] flex items-center justify-center text-sm transition-all active:scale-[0.98]"
+            className="w-full h-12 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-sm transition-all active:scale-[0.98]"
           >
             Show Results{activeFilters.length > 0 ? ` (${activeFilters.length} filters)` : ''}
           </button>

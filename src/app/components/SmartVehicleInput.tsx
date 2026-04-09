@@ -547,16 +547,24 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setExpanded(true);
   }, [mode, initialQueryProp]);
 
-  // Auto-focus textarea when page mode mounts (small delay so DOM is ready and Safari opens keyboard)
+  // Auto-focus textarea when page mode mounts
+  // Safari won't open keyboard from programmatic focus without a user gesture,
+  // so we use the readonly trick: set readonly, focus (moves cursor without keyboard),
+  // then remove readonly which triggers keyboard on some Safari versions.
+  // As a fallback, the input area is visually prominent to invite a tap.
   useEffect(() => {
     if (mode !== 'page') return;
     const timer = setTimeout(() => {
       const input = inputRef.current;
       if (!input) return;
+      input.setAttribute('readonly', 'readonly');
       input.focus();
       const len = input.value.length;
       input.setSelectionRange(len, len);
-    }, 100);
+      requestAnimationFrame(() => {
+        input.removeAttribute('readonly');
+      });
+    }, 50);
     return () => clearTimeout(timer);
   }, [mode]);
 
@@ -1014,7 +1022,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 key={message.id}
                 className={
                   message.role === 'user'
-                    ? 'ml-auto max-w-[85%] rounded-2xl bg-[#1D1E20] px-3.5 py-2.5 text-[14px] leading-5 text-white'
+                    ? 'ml-auto max-w-[85%] rounded-2xl bg-[#4B525A] px-3.5 py-2.5 text-[14px] leading-5 text-white'
                     : 'mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113]'
                 }
               >
@@ -1137,6 +1145,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <textarea
                   ref={inputRef}
                   autoFocus
+                  inputMode="text"
                   rows={1}
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}

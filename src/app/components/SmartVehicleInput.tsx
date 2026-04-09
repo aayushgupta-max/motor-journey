@@ -615,6 +615,14 @@ export function SmartVehicleInput() {
   useEffect(() => {
     if (!expanded) return;
 
+    // Lock body to prevent Safari from scrolling the page behind the overlay
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+
     const viewport = window.visualViewport;
 
     const syncViewportHeight = () => {
@@ -633,6 +641,14 @@ export function SmartVehicleInput() {
       window.removeEventListener('resize', syncViewportHeight);
       setViewportHeight(null);
       setViewportOffsetTop(0);
+
+      // Unlock body and restore scroll position
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
     };
   }, [expanded]);
 
@@ -1087,9 +1103,9 @@ export function SmartVehicleInput() {
                     <button
                       type="button"
                       onClick={goToQuotes}
-                      className="h-9 rounded-full bg-[#0F1113] px-4 text-sm text-white"
+                      className="h-9 rounded-full bg-[#0F1113] px-4 text-sm"
                     >
-                      {`See ${quoteCount} Quotes`}
+                      <span className="shimmer-text">{`See ${quoteCount} Quotes`}</span>
                     </button>
                   </div>
                 )}

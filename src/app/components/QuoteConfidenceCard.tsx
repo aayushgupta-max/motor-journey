@@ -326,11 +326,24 @@ export function QuoteConfidenceCard({
   const nonDeferredActions = pendingActions.filter(
     (action) => !(skippedUploads.includes(action as 'mulkiyaUpload' | 'dlUpload'))
   );
-  const nextAction = (nonDeferredActions[0] ?? pendingActions[0] ?? 'done') as QuoteFlowAction;
+  const deferredActions = pendingActions.filter(
+    (action) => skippedUploads.includes(action as 'mulkiyaUpload' | 'dlUpload')
+  );
+  // Show non-deferred first, then deferred (pushed to last)
+  const nextAction = (nonDeferredActions[0] ?? deferredActions[0] ?? 'done') as QuoteFlowAction;
+  const pendingUploads = pendingActions.filter(
+    (a) => a === 'mulkiyaUpload' || a === 'dlUpload'
+  );
+  const pendingNonUploads = pendingActions.filter(
+    (a) => a !== 'mulkiyaUpload' && a !== 'dlUpload'
+  );
+  const isUploadAction = nextAction === 'mulkiyaUpload' || nextAction === 'dlUpload';
+  // Show skip if: there are other questions to go to, OR both uploads are pending (toggle)
+  const canSkipUpload = isUploadAction && (pendingNonUploads.length > 0 || pendingUploads.length > 1);
   const allSurveyDone = nextAction === 'done';
   const confidencePct = getConfidenceScore(details, isLoggedIn);
   const answeredCount = getCompletedFieldCount(details, isLoggedIn);
-  const totalFieldCount = getTotalFieldCount();
+  const totalFieldCount = getTotalFieldCount(details);
   const remaining = Math.max(0, totalFieldCount - answeredCount);
 
   useEffect(() => {
@@ -447,16 +460,22 @@ export function QuoteConfidenceCard({
               setDetails,
               onOpenMulkiya,
               onOpenDl,
-              nextAction === 'mulkiyaUpload' || nextAction === 'dlUpload'
-                ? () =>
-                    setSkippedUploads((prev) =>
-                      prev.includes(nextAction as 'mulkiyaUpload' | 'dlUpload')
-                        ? prev
-                        : [...prev, nextAction as 'mulkiyaUpload' | 'dlUpload']
-                    )
+              canSkipUpload
+                ? () => {
+                    if (pendingNonUploads.length > 0) {
+                      // Push to last — defer this upload, go to next question
+                      setSkippedUploads((prev) =>
+                        prev.includes(nextAction as 'mulkiyaUpload' | 'dlUpload')
+                          ? prev
+                          : [...prev, nextAction as 'mulkiyaUpload' | 'dlUpload']
+                      );
+                    } else {
+                      // Only uploads left — toggle to the other one
+                      setSkippedUploads([nextAction as 'mulkiyaUpload' | 'dlUpload']);
+                    }
+                  }
                 : undefined,
-              (nextAction === 'mulkiyaUpload' || nextAction === 'dlUpload') &&
-                pendingActions.length > 1
+              canSkipUpload
             )}
           </div>
         ) : null}

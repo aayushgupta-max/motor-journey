@@ -82,16 +82,35 @@ export function isQuoteUnlockReady(details: QuoteFlowDetails): boolean {
   return true;
 }
 
+/*
+ * Single source of truth for all tracked fields.
+ * The edit sheet, confidence card, and header counter all derive from this.
+ *
+ * Car Details (8):  brand, model, year, condition*, spec, city, expiry, coverage
+ * Owner Details (7): name, dob, nationality, drivingExperience, accidentFreeMonths, noClaimProof*, mobileNumber
+ *
+ * * condition: only relevant when year is current or last year
+ * * noClaimProof: only relevant when accidentFreeMonths is "Never claimed"
+ */
 const weightedFields: FlowField[] = [
+  // ── Car Details ──
   { key: 'brand', weight: 12, isComplete: (details) => Boolean(details.brand) },
   { key: 'model', weight: 12, isComplete: (details) => Boolean(details.model) },
   { key: 'year', weight: 12, isComplete: (details) => Boolean(details.year) },
-  { key: 'coverage', weight: 10, isComplete: (details) => Boolean(details.coverage) },
+  {
+    key: 'condition',
+    weight: 4,
+    isComplete: (details) =>
+      !shouldRequireCondition(details.year) || Boolean(details.condition),
+  },
   { key: 'spec', weight: 8, isComplete: (details) => Boolean(details.spec) },
   { key: 'city', weight: 6, isComplete: (details) => Boolean(details.city) },
   { key: 'expiry', weight: 6, isComplete: (details) => Boolean(details.expiry) },
-  { key: 'nationality', weight: 4, isComplete: (details) => Boolean(details.nationality) },
+  { key: 'coverage', weight: 10, isComplete: (details) => Boolean(details.coverage) },
+  // ── Owner Details ──
+  { key: 'name', weight: 4, isComplete: (details) => Boolean(details.name) },
   { key: 'dob', weight: 5, isComplete: (details) => Boolean(details.dob) },
+  { key: 'nationality', weight: 4, isComplete: (details) => Boolean(details.nationality) },
   {
     key: 'drivingExperience',
     weight: 5,
@@ -132,11 +151,54 @@ export function getCompletedFieldCount(
   details: QuoteFlowDetails,
   isLoggedIn = false
 ): number {
-  return weightedFields.filter((field) => field.isComplete(details, isLoggedIn)).length;
+  const visible = [...getVisibleCarFields(details), ...getVisiblePersonalFields(details)];
+  return visible.filter((k) => {
+    const wf = weightedFields.find((f) => f.key === k);
+    return wf ? wf.isComplete(details, isLoggedIn) : Boolean(details[k]);
+  }).length;
 }
 
-export function getTotalFieldCount(): number {
-  return weightedFields.length;
+export function getTotalFieldCount(details?: QuoteFlowDetails): number {
+  if (!details) return weightedFields.length;
+  return getVisibleCarFields(details).length + getVisiblePersonalFields(details).length;
+}
+
+/** Car fields from the single state machine */
+export const carFieldKeys: (keyof QuoteFlowDetails)[] = [
+  'brand', 'model', 'year', 'condition', 'spec', 'city', 'expiry', 'coverage',
+];
+
+/** Owner/personal fields from the single state machine */
+export const personalFieldKeys: (keyof QuoteFlowDetails)[] = [
+  'name', 'dob', 'nationality', 'drivingExperience', 'accidentFreeMonths', 'noClaimProof', 'mobileNumber',
+];
+
+/** Get visible car fields based on current state */
+export function getVisibleCarFields(details: QuoteFlowDetails): (keyof QuoteFlowDetails)[] {
+  return carFieldKeys.filter((k) => {
+    if (k === 'condition') return shouldRequireCondition(details.year);
+    return true;
+  });
+}
+
+/** Get visible personal fields based on current state */
+export function getVisiblePersonalFields(details: QuoteFlowDetails): (keyof QuoteFlowDetails)[] {
+  return personalFieldKeys.filter((k) => {
+    if (k === 'noClaimProof') return details.accidentFreeMonths === 'Never claimed';
+    return true;
+  });
+}
+
+/** Count filled fields for a given list */
+export function countFilledFields(
+  details: QuoteFlowDetails,
+  fields: (keyof QuoteFlowDetails)[],
+  isLoggedIn = false
+): number {
+  return fields.filter((k) => {
+    const wf = weightedFields.find((f) => f.key === k);
+    return wf ? wf.isComplete(details, isLoggedIn) : Boolean(details[k]);
+  }).length;
 }
 
 export function getPendingQuoteActions(
@@ -174,8 +236,9 @@ export function applyMockMulkiyaExtraction(
     model: details.model || 'Camry',
     year: details.year || String(currentYear - 1),
     city: details.city || 'Dubai',
-    expiry: details.expiry || 'Active until next month',
+    expiry: details.expiry || '2026-05-15',
     nationality: details.nationality || 'Indian',
+    name: details.name || 'Aayush Gupta',
   };
 }
 
@@ -184,8 +247,11 @@ export function applyMockDlExtraction(
 ): Partial<QuoteFlowDetails> {
   return {
     dlUploaded: true,
-    dob: details.dob || '12 Mar 1994',
-    drivingExperience: details.drivingExperience || '8 years',
+    dob: details.dob || '1994-03-12',
+    drivingExperience: details.drivingExperience || '5-8 years',
+    nationality: details.nationality || 'Indian',
+    name: details.name || 'Aayush Gupta',
+    accidentFreeMonths: details.accidentFreeMonths || '3+ years',
   };
 }
 

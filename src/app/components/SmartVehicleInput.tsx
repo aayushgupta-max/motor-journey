@@ -519,6 +519,7 @@ export function SmartVehicleInput() {
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
   const [expanded, setExpanded] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
@@ -618,6 +619,7 @@ export function SmartVehicleInput() {
 
     const syncViewportHeight = () => {
       setViewportHeight(viewport?.height ?? window.innerHeight);
+      setViewportOffsetTop(viewport?.offsetTop ?? 0);
     };
 
     syncViewportHeight();
@@ -630,6 +632,7 @@ export function SmartVehicleInput() {
       viewport?.removeEventListener('scroll', syncViewportHeight);
       window.removeEventListener('resize', syncViewportHeight);
       setViewportHeight(null);
+      setViewportOffsetTop(0);
     };
   }, [expanded]);
 
@@ -952,8 +955,11 @@ export function SmartVehicleInput() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 h-[100svh] overflow-hidden bg-white flex flex-col"
-            style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
+            className="fixed inset-x-0 z-50 overflow-hidden bg-white flex flex-col"
+            style={{
+              top: `${viewportOffsetTop}px`,
+              height: viewportHeight ? `${viewportHeight}px` : '100svh',
+            }}
           >
             {/* Header */}
             <div ref={headerRef}>

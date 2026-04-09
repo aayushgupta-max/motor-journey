@@ -3,13 +3,20 @@ import { useNavigate } from 'react-router';
 import { Drawer } from 'vaul';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Camera, Upload, Check, ArrowRight, X, ImageIcon } from 'lucide-react';
+import {
+  applyMockMulkiyaExtraction,
+  emptyQuoteFlowDetails,
+  mergeQuoteFlowDetails,
+  type QuoteFlowDetails,
+} from '../lib/quoteFlow';
 
 interface MulkiyaBottomSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onComplete?: (details: Partial<QuoteFlowDetails>) => void;
 }
 
-export function MulkiyaBottomSheet({ open, onOpenChange }: MulkiyaBottomSheetProps) {
+export function MulkiyaBottomSheet({ open, onOpenChange, onComplete }: MulkiyaBottomSheetProps) {
   const navigate = useNavigate();
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
@@ -45,7 +52,16 @@ export function MulkiyaBottomSheet({ open, onOpenChange }: MulkiyaBottomSheetPro
     setTimeout(() => {
       setProcessing(false);
       onOpenChange(false);
-      navigate('/quotes');
+      const extractedDetails = applyMockMulkiyaExtraction(emptyQuoteFlowDetails);
+      if (onComplete) {
+        onComplete(extractedDetails);
+        return;
+      }
+      navigate('/quotes', {
+        state: {
+          extractedRequirementDetails: mergeQuoteFlowDetails(emptyQuoteFlowDetails, extractedDetails),
+        },
+      });
     }, 1500);
   };
 

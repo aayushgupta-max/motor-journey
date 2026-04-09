@@ -6,17 +6,37 @@ export default function Requirements() {
   const location = useLocation();
   const initialQuery = (location.state as { initialQuery?: string })?.initialQuery || '';
 
-  // Lock body scroll so nothing moves behind on iOS Safari
+  // Lock body & html to prevent any scroll/bounce behind the chat screen on iOS Safari
   useEffect(() => {
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.inset = '0';
+    const html = document.documentElement;
+    const body = document.body;
+
+    html.style.overflow = 'hidden';
+    html.style.height = '100%';
+    html.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.height = '100%';
+    body.style.overscrollBehavior = 'none';
+    body.style.touchAction = 'manipulation';
+
+    // Prevent overscroll bounce on iOS
+    const preventBounce = (e: TouchEvent) => {
+      // Allow scrolling inside the chat scroll area
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-scroll-area]')) return;
+      e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventBounce, { passive: false });
+
     return () => {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.inset = '';
+      html.style.overflow = '';
+      html.style.height = '';
+      html.style.overscrollBehavior = '';
+      body.style.overflow = '';
+      body.style.height = '';
+      body.style.overscrollBehavior = '';
+      body.style.touchAction = '';
+      document.removeEventListener('touchmove', preventBounce);
     };
   }, []);
 

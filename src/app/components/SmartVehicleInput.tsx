@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
+import TextareaAutosize from 'react-textarea-autosize';
 import { SendHorizonal, Sparkles, Pencil, Check, Plus, X } from 'lucide-react';
 import { PageHeaderBar } from './PageHeaderBar';
+import {
+  emptyQuoteFlowDetails,
+  isQuoteUnlockReady,
+  shouldRequireCondition,
+  type QuoteFlowDetails,
+} from '../lib/quoteFlow';
 import {
   carBrands,
   getYearRange,
@@ -15,19 +22,7 @@ const popularBrands = carBrands.slice(0, 6);
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
 type CoverageType = 'Comprehensive' | 'Third Party';
 type SuggestionCategory = keyof RequirementDetails;
-
-type RequirementDetails = {
-  brand: string;
-  model: string;
-  year: string;
-  condition: string;
-  coverage: string;
-  spec: string;
-  budget: string;
-  city: string;
-  usage: string;
-  expiry: string;
-};
+type RequirementDetails = QuoteFlowDetails;
 
 type ChatMessage = {
   id: number;
@@ -41,34 +36,32 @@ type AttachmentItem = {
   kind: 'image' | 'file';
 };
 
-const emptyDetails: RequirementDetails = {
-  brand: '',
-  model: '',
-  year: '',
-  condition: '',
-  coverage: '',
-  spec: '',
-  budget: '',
-  city: '',
-  usage: '',
-  expiry: '',
-};
+const emptyDetails: RequirementDetails = emptyQuoteFlowDetails;
 
 const detailLabels: Record<keyof RequirementDetails, string> = {
   brand: 'Car brand',
   model: 'Car model',
   year: 'Year',
   condition: 'Condition',
-  coverage: 'Coverage',
-  spec: 'Car spec',
+  coverage: 'Previous repair type',
+  spec: 'GCC spec',
   budget: 'Budget',
-  city: 'City',
+  city: 'Registration city',
   usage: 'Usage',
-  expiry: 'Current policy expiry',
+  expiry: 'Previous policy expiry',
+  name: 'Owner name',
+  dob: 'Date of birth',
+  nationality: 'Nationality',
+  drivingExperience: 'Driving experience',
+  accidentFreeMonths: 'Months without accident',
+  noClaimProof: 'No-claim proof',
+  mobileNumber: 'Mobile number',
+  mulkiyaUploaded: 'Mulkiya',
+  dlUploaded: 'Driving license',
 };
 
 const primaryDetailFields: Array<keyof RequirementDetails> = ['brand', 'model', 'year'];
-const secondaryDetailFields: Array<keyof RequirementDetails> = ['city', 'usage', 'expiry', 'budget'];
+const secondaryDetailFields: Array<keyof RequirementDetails> = ['city', 'expiry'];
 
 const cities = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Umm Al Quwain', 'Fujairah'];
 const conversationPrefixes = [
@@ -89,15 +82,6 @@ const conversationPrefixes = [
   'i drive ',
   'i own ',
 ];
-
-// Only ask brand new vs pre-owned for current year or last year (if within 6 months)
-function shouldAskCondition(year: number): boolean {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  if (year === currentYear) return true;
-  if (year === currentYear - 1 && now.getMonth() < 6) return true; // Jan–Jun
-  return false;
-}
 
 function getSentencePrefix(inputText: string): string {
   const lower = inputText.toLowerCase();
@@ -133,13 +117,9 @@ function getNextMissingCategory(details: RequirementDetails): SuggestionCategory
   if (!details.brand) return 'brand';
   if (!details.model) return 'model';
   if (!details.year) return 'year';
-  if (shouldAskCondition(Number(details.year)) && !details.condition) return 'condition';
+  if (shouldRequireCondition(details.year) && !details.condition) return 'condition';
   if (!details.coverage) return 'coverage';
   if (!details.spec) return 'spec';
-  if (!details.city) return 'city';
-  if (!details.usage) return 'usage';
-  if (!details.expiry) return 'expiry';
-  if (!details.budget) return 'budget';
   return null;
 }
 
@@ -155,10 +135,6 @@ function detectSuggestionCategory(
   if (!fragment && normalizedQuestion) {
     if (normalizedQuestion.includes('third party') || normalizedQuestion.includes('comprehensive')) return 'coverage';
     if (normalizedQuestion.includes('gcc')) return 'spec';
-    if (normalizedQuestion.includes('emirate') || normalizedQuestion.includes('registered')) return 'city';
-    if (normalizedQuestion.includes('personal') || normalizedQuestion.includes('business')) return 'usage';
-    if (normalizedQuestion.includes('expires') || normalizedQuestion.includes('policy')) return 'expiry';
-    if (normalizedQuestion.includes('budget')) return 'budget';
     if (normalizedQuestion.includes('brand new') || normalizedQuestion.includes('pre-owned')) return 'condition';
     if (normalizedQuestion.includes('which year')) return 'year';
     if (normalizedQuestion.includes('which make')) return 'brand';
@@ -171,16 +147,12 @@ function detectSuggestionCategory(
 
   if (/\b(third party|third-party|comprehensive|cover|insurance)\b/.test(fragment)) return 'coverage';
   if (/\b(gcc|non-gcc|imported|american|european|japanese|spec)\b/.test(fragment)) return 'spec';
-  if (/\b(budget|aed|dhs?)\b/.test(fragment)) return 'budget';
-  if (/\b(expire|expiry|expiring|renewal|renew)\b/.test(fragment)) return 'expiry';
-  if (/\b(dubai|abu dhabi|sharjah|ajman|ras al khaimah|umm al quwain|fujairah|registered|emirate)\b/.test(fragment)) return 'city';
-  if (/\b(personal|private|commercial|business|delivery|taxi|use)\b/.test(fragment)) return 'usage';
   if (/\b(brand new|pre-owned|pre owned|used|new)\b/.test(fragment)) return 'condition';
 
   if (!details.brand || phase === 'brand') return 'brand';
   if (details.brand && !details.model) return 'model';
   if (details.brand && details.model && !details.year) return 'year';
-  if (details.year && !details.condition && shouldAskCondition(Number(details.year))) return 'condition';
+  if (details.year && !details.condition && shouldRequireCondition(details.year)) return 'condition';
 
   return getNextMissingCategory(details);
 }
@@ -226,7 +198,7 @@ function getSentenceTemplates(
   }
 
   if (category === 'coverage') {
-    return ['I want Third Party insurance.', 'I want Comprehensive insurance.'];
+    return ['My previous insurance was Third Party.', 'My previous insurance was Comprehensive.'];
   }
 
   if (category === 'spec') {
@@ -237,16 +209,8 @@ function getSentenceTemplates(
     return ['My car is registered in Dubai.', 'My car is registered in Abu Dhabi.', 'My car is registered in Sharjah.'];
   }
 
-  if (category === 'usage') {
-    return ['I use it for personal driving.', 'I use it for business use.', 'It is for daily commute.'];
-  }
-
   if (category === 'expiry') {
     return ['My current policy expires next month.', 'My current policy already expired.', 'My renewal is due this week.'];
-  }
-
-  if (category === 'budget') {
-    return ['My budget is AED 2,000.', 'My budget is around AED 3,000.', 'I want the best value option.'];
   }
 
   return [];
@@ -374,9 +338,15 @@ function getGuidancePrompts(details: RequirementDetails, inputText: string): Arr
 
   const prompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
 
+  if (!details.condition && shouldRequireCondition(details.year)) {
+    prompts.push({ key: 'condition', text: 'It is brand new.' });
+    prompts.push({ key: 'condition', text: 'It is pre-owned.' });
+    return prompts;
+  }
+
   if (!details.coverage) {
-    prompts.push({ key: 'coverage', text: 'I want Third Party cover.' });
-    prompts.push({ key: 'coverage', text: 'I want Comprehensive cover.' });
+    prompts.push({ key: 'coverage', text: 'My previous insurance was Third Party.' });
+    prompts.push({ key: 'coverage', text: 'My previous insurance was Comprehensive.' });
     return prompts;
   }
 
@@ -386,35 +356,6 @@ function getGuidancePrompts(details: RequirementDetails, inputText: string): Arr
     return prompts;
   }
 
-  if (!details.condition && shouldAskCondition(Number(details.year))) {
-    prompts.push({ key: 'condition', text: 'It is brand new.' });
-    prompts.push({ key: 'condition', text: 'It is pre-owned.' });
-    return prompts;
-  }
-
-  if (!details.city) {
-    prompts.push({ key: 'city', text: 'My car is registered in Dubai.' });
-    prompts.push({ key: 'city', text: 'My car is registered in Abu Dhabi.' });
-    return prompts;
-  }
-
-  if (!details.usage) {
-    prompts.push({ key: 'usage', text: 'I use it for personal driving.' });
-    prompts.push({ key: 'usage', text: 'I use it for business use.' });
-    return prompts;
-  }
-
-  if (!details.expiry) {
-    prompts.push({ key: 'expiry', text: 'My current policy expires next month.' });
-    prompts.push({ key: 'expiry', text: 'My current policy already expired.' });
-    return prompts;
-  }
-
-  if (!details.budget) {
-    prompts.push({ key: 'budget', text: 'My budget is AED 2,000.' });
-    prompts.push({ key: 'budget', text: 'My budget is around AED 3,000.' });
-  }
-
   return prompts;
 }
 
@@ -422,16 +363,14 @@ function getNextQuestion(details: RequirementDetails): string {
   if (!details.brand) return 'Which make is your car?';
   if (!details.model) return `Which ${details.brand} model do you have?`;
   if (!details.year) return 'Which year model is it?';
-  if (hasVehicleCore(details)) {
-    if (!details.coverage) return 'We have enough to start quotes.\nTell me if you want Third Party or Comprehensive insurance.';
+  if (!details.condition && shouldRequireCondition(details.year)) {
+    return 'One more detail needed for quotes.\nIs the car brand new or pre-owned?';
+  }
+  if (isQuoteUnlockReady(details)) {
+    if (!details.coverage) return 'Quotes are ready.\nTell me if your previous insurance was Third Party or Comprehensive.';
     if (!details.spec) return 'Quotes are ready.\nTell me if your car is GCC spec or non-GCC for better matching.';
-    if (!details.city) return 'Quotes are ready.\nTell me which emirate the car is registered in for better matching.';
-    if (!details.usage) return 'Quotes are ready.\nTell me whether the car is for personal or business use.';
-    if (!details.expiry) return 'Quotes are ready.\nTell me when your current policy expires if you want better matching.';
-    if (!details.budget) return 'Quotes are ready.\nTell me your budget if you want help narrowing the options.';
     return 'Quotes are ready.\nYou can continue adding details, or go ahead and see quotes.';
   }
-  if (!details.condition && shouldAskCondition(Number(details.year))) return 'Is it brand new or pre-owned?';
   return 'Anything else you want us to consider before showing quotes?';
 }
 
@@ -445,9 +384,7 @@ function getEstimatedQuoteCount(details: RequirementDetails): number {
   if (details.coverage) count += 3;
   if (details.spec) count += 2;
   if (details.city) count += 2;
-  if (details.usage) count += 2;
   if (details.expiry) count += 1;
-  if (details.budget) count += 2;
 
   return Math.max(0, Math.min(28, count));
 }
@@ -458,6 +395,7 @@ function getCoreStatusText(details: RequirementDetails, quoteCount: number): str
   if (!details.brand) missingCore.push('make');
   if (!details.model) missingCore.push('model');
   if (!details.year) missingCore.push('year');
+  if (shouldRequireCondition(details.year) && !details.condition) missingCore.push('brand new status');
 
   if (missingCore.length === 0) {
     return `${quoteCount} quotes ready so far`;
@@ -510,14 +448,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const inputBarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputSizerRef = useRef<HTMLDivElement>(null);
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const detailRailRef = useRef<HTMLDivElement>(null);
   const chipRefs = useRef<Partial<Record<keyof RequirementDetails, HTMLDivElement | null>>>({});
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
   const [expanded, setExpanded] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<SuggestionPhase>('brand');
@@ -547,16 +483,24 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setExpanded(true);
   }, [mode, initialQueryProp]);
 
-  // Auto-focus textarea when page mode mounts (small delay so DOM is ready and Safari opens keyboard)
+  // Auto-focus textarea when page mode mounts
+  // Safari won't open keyboard from programmatic focus without a user gesture,
+  // so we use the readonly trick: set readonly, focus (moves cursor without keyboard),
+  // then remove readonly which triggers keyboard on some Safari versions.
+  // As a fallback, the input area is visually prominent to invite a tap.
   useEffect(() => {
     if (mode !== 'page') return;
     const timer = setTimeout(() => {
       const input = inputRef.current;
       if (!input) return;
+      input.setAttribute('readonly', 'readonly');
       input.focus();
       const len = input.value.length;
       input.setSelectionRange(len, len);
-    }, 100);
+      requestAnimationFrame(() => {
+        input.removeAttribute('readonly');
+      });
+    }, 50);
     return () => clearTimeout(timer);
   }, [mode]);
 
@@ -567,9 +511,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const ghost = normalizedQuery === query.toLowerCase().trim()
     ? getGhostText(query, currentSuggestions)
     : null;
-  const previewText = ghost && query.length > 0 ? ghost : query;
   const guidancePrompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
-  const isQuoteReady = Boolean(details.brand && details.model && details.year);
+  const isQuoteReady = isQuoteUnlockReady(details);
   const quoteCount = getEstimatedQuoteCount(details);
   const coreStatusText = getCoreStatusText(details, quoteCount);
   const canSubmit = Boolean(query.trim() || attachments.length > 0);
@@ -646,7 +589,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
     const syncViewportHeight = () => {
       setViewportHeight(viewport?.height ?? window.innerHeight);
-      setViewportOffsetTop(viewport?.offsetTop ?? 0);
     };
 
     syncViewportHeight();
@@ -659,7 +601,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       viewport?.removeEventListener('scroll', syncViewportHeight);
       window.removeEventListener('resize', syncViewportHeight);
       setViewportHeight(null);
-      setViewportOffsetTop(0);
     };
   }, [expanded]);
 
@@ -696,18 +637,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     scrollArea.scrollTop = scrollArea.scrollHeight;
   }, [expanded, phase, filteredSuggestions.length, messages.length, isExtracting]);
 
-  useLayoutEffect(() => {
-    const textarea = inputRef.current;
-    const sizer = inputSizerRef.current;
-    if (!textarea || !sizer) return;
-
-    sizer.textContent = `${previewText || query || ''}\n`;
-    const lineHeight = 20;
-    const maxHeight = lineHeight * 4;
-    const nextHeight = Math.min(Math.max(sizer.scrollHeight, lineHeight), maxHeight);
-    textarea.style.height = `${nextHeight}px`;
-    textarea.style.overflowY = sizer.scrollHeight > maxHeight ? 'auto' : 'hidden';
-  }, [query, previewText, expanded]);
 
   const openExpanded = (initialQuery?: string) => {
     navigate('/requirements', { state: { initialQuery: initialQuery || '' } });
@@ -752,7 +681,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       setQuery(nextText + ', ');
     } else if (suggestion.phase === 'year') {
       const parsed = parseVehicleInput(nextText);
-      if (parsed?.year && shouldAskCondition(parsed.year)) {
+      if (parsed?.year && shouldRequireCondition(parsed.year)) {
         setPhase('condition');
         setQuery(nextText + ', ');
       } else {
@@ -803,10 +732,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       ]);
       setIsExtracting(false);
       extractionTimerRef.current = null;
-    }, 700);
+    }, 1400);
 
     const parsed = parseVehicleInput(normalizeVehicleQuery(input));
-    if (parsed?.brand && parsed?.model && parsed?.year && shouldAskCondition(parsed.year) && parsed?.isBrandNew === undefined) {
+    if (parsed?.brand && parsed?.model && parsed?.year && shouldRequireCondition(parsed.year) && parsed?.isBrandNew === undefined) {
       setPhase('condition');
     } else if (parsed?.brand && parsed?.model && !parsed?.year) {
       setPhase('year');
@@ -886,9 +815,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const handleQueryChange = (val: string) => {
     setQuery(val);
     const parsed = parseVehicleInput(normalizeVehicleQuery(val));
-    if (parsed?.brand && parsed?.model && parsed?.year && (parsed?.isBrandNew !== undefined || !shouldAskCondition(parsed.year))) {
+    if (parsed?.brand && parsed?.model && parsed?.year && (parsed?.isBrandNew !== undefined || !shouldRequireCondition(parsed.year))) {
       setPhase('done');
-    } else if (parsed?.brand && parsed?.model && parsed?.year && shouldAskCondition(parsed.year)) {
+    } else if (parsed?.brand && parsed?.model && parsed?.year && shouldRequireCondition(parsed.year)) {
       setPhase('condition');
     } else if (parsed?.brand && parsed?.model) {
       setPhase('year');
@@ -904,14 +833,13 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     return (
       <div
         ref={overlayRef}
-        className="flex flex-col bg-white"
+        className="flex flex-col bg-white overscroll-none [touch-action:manipulation]"
         style={{
-          height: viewportHeight ? `${viewportHeight}px` : '100svh',
-          transform: `translateY(${viewportOffsetTop}px)`,
+          height: viewportHeight ? `${viewportHeight}px` : '100dvh',
         }}
       >
         {/* Header */}
-        <div ref={headerRef}>
+        <div ref={headerRef} className="pt-[env(safe-area-inset-top)]">
           <PageHeaderBar
             title="Your requirements"
             subtitle="Tell us about your car in detail"
@@ -1005,8 +933,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         {/* Conversation + details */}
         <div
           ref={suggestionsScrollRef}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC]"
-          style={suggestionsHeight !== null ? { height: `${suggestionsHeight}px` } : { flex: 1 }}
+          data-scroll-area
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC] [touch-action:pan-y]"
+          style={{
+            height: suggestionsHeight !== null ? `${suggestionsHeight}px` : undefined,
+            flex: suggestionsHeight !== null ? undefined : 1,
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+          }}
         >
           <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
             {messages.map((message) => (
@@ -1014,8 +948,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 key={message.id}
                 className={
                   message.role === 'user'
-                    ? 'ml-auto max-w-[85%] rounded-2xl bg-[#1D1E20] px-3.5 py-2.5 text-[14px] leading-5 text-white'
-                    : 'mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113]'
+                    ? 'ml-auto max-w-[85%] rounded-2xl bg-[#D6DADE] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]'
+                    : 'mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]'
                 }
               >
                 {message.role === 'assistant' ? renderAssistantMessage(message.text) : message.text}
@@ -1046,7 +980,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         </div>
 
         {/* Bottom input */}
-        <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
+        <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
           {messages.length === 0 && (
             <p className="mb-1.5 text-[12px] text-[#5E6670]">
               Type naturally and we will capture important details for better quotes.
@@ -1123,26 +1057,23 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 className="hidden"
               />
               <div className="relative min-w-0 flex-1">
-                <div
-                  ref={inputSizerRef}
-                  className="invisible absolute left-0 top-0 -z-10 w-full whitespace-pre-wrap break-words p-0 m-0 text-[14px] leading-5"
-                  aria-hidden="true"
-                />
                 {ghost && query.length > 0 && (
                   <div className="absolute inset-x-0 top-0 pointer-events-none z-0 whitespace-pre-wrap break-words text-[14px] leading-5">
                     <span className="text-transparent">{query}</span>
                     <span className="text-[#B0B6BE]">{ghost.slice(query.length)}</span>
                   </div>
                 )}
-                <textarea
+                <TextareaAutosize
                   ref={inputRef}
                   autoFocus
-                  rows={1}
+                  inputMode="text"
+                  minRows={1}
+                  maxRows={5}
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Describe your car and requirement..."
-                  className="relative z-10 m-0 block h-5 min-h-5 w-full resize-none overflow-hidden bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
+                  className="relative z-10 m-0 block w-full resize-none bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
                 />
               </div>
               <button

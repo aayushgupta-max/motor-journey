@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Header } from '../components/Header';
-import { Star, Check, Lock, X, Eye, EyeOff, ClipboardList, Pencil } from 'lucide-react';
+import { Star, Check, Lock, X, ClipboardList, Pencil } from 'lucide-react';
 import { motion } from 'motion/react';
-import { SlidersHorizontal, ArrowUpDown, ChevronDown, Search } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, Search } from 'lucide-react';
 import { DLUploadBottomSheet } from '../components/DLUploadBottomSheet';
 import { LoginModal } from '../components/LoginModal';
 import { AiAssistantButton } from '../components/AiAssistantButton';
@@ -11,6 +11,18 @@ import { QuoteConfidenceCard } from '../components/QuoteConfidenceCard';
 import { FlipPrice } from '../components/FlipPrice';
 import { useAuth } from '../components/AuthContext';
 import { PageHeaderBar } from '../components/PageHeaderBar';
+import { MulkiyaBottomSheet } from '../components/MulkiyaBottomSheet';
+import {
+  applyMockDlExtraction,
+  buildVehicleSubtitle,
+  emptyQuoteFlowDetails,
+  getCompletedFieldCount,
+  getConfidenceScore,
+  getNextQuotesAction,
+  getTotalFieldCount,
+  mergeQuoteFlowDetails,
+  type QuoteFlowDetails,
+} from '../lib/quoteFlow';
 
 const allFilterOptions = [
   { label: 'Comprehensive', category: 'Coverage' },
@@ -101,8 +113,37 @@ const quotes = [
   },
 ];
 
+function buildInitialProfile(state: unknown, isLoggedIn: boolean): QuoteFlowDetails {
+  const next = mergeQuoteFlowDetails(emptyQuoteFlowDetails, {});
+  const navState = (state ?? {}) as {
+    brand?: { name?: string } | string;
+    model?: string;
+    year?: number;
+    isBrandNew?: boolean | null;
+    extractedRequirementDetails?: Partial<QuoteFlowDetails>;
+  };
+
+  if (navState.extractedRequirementDetails) {
+    Object.assign(next, mergeQuoteFlowDetails(next, navState.extractedRequirementDetails));
+  }
+
+  if (typeof navState.brand === 'string') {
+    next.brand = navState.brand;
+  } else if (navState.brand?.name) {
+    next.brand = navState.brand.name;
+  }
+  if (navState.model) next.model = navState.model;
+  if (navState.year) next.year = String(navState.year);
+  if (navState.isBrandNew === true) next.condition = 'Brand new';
+  if (navState.isBrandNew === false) next.condition = 'Pre-owned';
+  if (isLoggedIn && !next.mobileNumber) next.mobileNumber = 'Captured';
+
+  return next;
+}
+
 export default function Quotes() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn, login } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(!isLoggedIn);
   const [unlocked, setUnlocked] = useState(isLoggedIn);
@@ -110,30 +151,18 @@ export default function Quotes() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showAllFilters, setShowAllFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [gccAnswer, setGccAnswer] = useState<'yes' | 'no' | null>(null);
-  const [gccSelection, setGccSelection] = useState<'yes' | 'no' | null>(null);
-  const [showDLUpload, setShowDLUpload] = useState(false);
-  const [dlUploaded, setDlUploaded] = useState(false);
-  const [dlSkipped, setDlSkipped] = useState(false);
+  const [profile, setProfile] = useState<QuoteFlowDetails>(() => buildInitialProfile(location.state, isLoggedIn));
+  const [showMulkiyaSheet, setShowMulkiyaSheet] = useState(false);
   const [showDLSheet, setShowDLSheet] = useState(false);
-  const [claimMonths, setClaimMonths] = useState<string | null>(null);
-  const [hasNoClaimProof, setHasNoClaimProof] = useState<'yes' | 'no' | null>(null);
-  const [surveyStep, setSurveyStep] = useState(0); // 0=gcc+dl, 1=claim months, 2=no claim proof, 3=dl retry (if skipped)
-
-  const noClaimProofNeeded = claimMonths === 'Never claimed';
-  const totalQuestions = noClaimProofNeeded ? 4 : 3;
-  const answeredCount = (gccSelection !== null ? 1 : 0) + (dlUploaded ? 1 : 0) + (claimMonths !== null ? 1 : 0) + (noClaimProofNeeded && hasNoClaimProof !== null ? 1 : 0);
-  const allSurveyDone = gccSelection !== null && dlUploaded && claimMonths !== null && (!noClaimProofNeeded || hasNoClaimProof !== null);
-  const [surveyBadgeDismissed, setSurveyBadgeDismissed] = useState(false);
+  const answeredCount = getCompletedFieldCount(profile, isLoggedIn);
+  const totalQuestions = getTotalFieldCount();
+  const allSurveyDone = getNextQuotesAction(profile, isLoggedIn) === 'done';
 
   useEffect(() => {
-    if (allSurveyDone) {
-      const timer = setTimeout(() => setSurveyBadgeDismissed(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [allSurveyDone]);
+    if (!isLoggedIn) return;
+    setProfile((prev) => (prev.mobileNumber ? prev : { ...prev, mobileNumber: 'Captured' }));
+  }, [isLoggedIn]);
 
   const toggleFilter = (f: string) => {
     setActiveFilters((prev) =>
@@ -191,7 +220,7 @@ export default function Quotes() {
       <div className="sticky top-0 z-40">
         <PageHeaderBar
           title="Your quotes"
-          subtitle="Toyota Camry 2023 · Dubai"
+          subtitle={buildVehicleSubtitle(profile)}
           onBack={() => navigate('/')}
           rightSlot={isLoggedIn ? (
             <motion.div
@@ -200,24 +229,30 @@ export default function Quotes() {
               key={answeredCount}
               className="relative rounded-full p-[2px]"
               style={{
-                background: `conic-gradient(#0F1113 ${allSurveyDone ? 100 : ((8 + answeredCount) / 12) * 100}%, #D6DADE 0%)`,
+                background: `conic-gradient(#0F1113 ${getConfidenceScore(profile, isLoggedIn)}%, #D6DADE 0%)`,
               }}
             >
-              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${allSurveyDone ? 'bg-[#FAFBFC]' : 'bg-[#F3F5F7]'}`}>
+              <div className={`flex items-center gap-1.5 rounded-full px-1 py-1 ${allSurveyDone ? 'bg-[#FAFBFC]' : 'bg-[#F3F5F7]'}`}>
                 <ClipboardList className={`w-3 h-3 ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`} />
-                <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`}>{allSurveyDone ? 12 : 8 + answeredCount}/12</span>
+                <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`}>{answeredCount}/{totalQuestions}</span>
                 <button
                   onClick={() => {
-                    setGccSelection(null);
-                    setShowDLUpload(false);
-                    setDlUploaded(false);
-                    setDlSkipped(false);
-                    setClaimMonths(null);
-                    setHasNoClaimProof(null);
-                    setSurveyStep(0);
-                    setSurveyBadgeDismissed(false);
+                    setProfile((prev) => ({
+                      ...prev,
+                      coverage: '',
+                      spec: '',
+                      city: '',
+                      expiry: '',
+                      nationality: '',
+                      dob: '',
+                      drivingExperience: '',
+                      accidentFreeMonths: '',
+                      noClaimProof: '',
+                      mulkiyaUploaded: false,
+                      dlUploaded: false,
+                    }));
                   }}
-                  className="ml-0.5 w-5 h-5 rounded-full bg-[#0F1113]/10 flex items-center justify-center"
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0F1113]/10"
                 >
                   <Pencil className="w-2.5 h-2.5 text-[#0F1113]" />
                 </button>
@@ -344,27 +379,15 @@ export default function Quotes() {
         )}
 
         {/* Quote Confidence Card — only for logged-in users */}
-        {isLoggedIn && <QuoteConfidenceCard
-          quotesCount={quotes.length}
-          plansCount={allFiltered.length}
-          answeredCount={answeredCount}
-          totalDataPoints={12}
-          allSurveyDone={allSurveyDone}
-          gccSelection={gccSelection}
-          setGccSelection={setGccSelection}
-          showDLUpload={showDLUpload}
-          setShowDLUpload={setShowDLUpload}
-          dlUploaded={dlUploaded}
-          dlSkipped={dlSkipped}
-          setDlSkipped={setDlSkipped}
-          setShowDLSheet={setShowDLSheet}
-          claimMonths={claimMonths}
-          setClaimMonths={setClaimMonths}
-          hasNoClaimProof={hasNoClaimProof}
-          setHasNoClaimProof={setHasNoClaimProof}
-          surveyStep={surveyStep}
-          setSurveyStep={setSurveyStep}
-        />}
+        {isLoggedIn && (
+          <QuoteConfidenceCard
+            details={profile}
+            setDetails={setProfile}
+            isLoggedIn={isLoggedIn}
+            onOpenMulkiya={() => setShowMulkiyaSheet(true)}
+            onOpenDl={() => setShowDLSheet(true)}
+          />
+        )}
 
         {/* Best Quote - Fully Visible */}
         {bestQuote && (
@@ -536,17 +559,20 @@ export default function Quotes() {
         />
       )}
 
+      <MulkiyaBottomSheet
+        open={showMulkiyaSheet}
+        onOpenChange={setShowMulkiyaSheet}
+        onComplete={(details) => {
+          setProfile((prev) => mergeQuoteFlowDetails(prev, details));
+        }}
+      />
+
       {/* DL Upload Bottom Sheet */}
       <DLUploadBottomSheet
         open={showDLSheet}
         onOpenChange={setShowDLSheet}
         onComplete={() => {
-          setDlUploaded(true);
-          setDlSkipped(false);
-          if (surveyStep === 1) {
-            setSurveyStep(2);
-          }
-          // If step 4 (retry), dlUploaded=true + dlSkipped=false → allSurveyDone triggers
+          setProfile((prev) => mergeQuoteFlowDetails(prev, applyMockDlExtraction(prev)));
         }}
       />
       <AiAssistantButton />

@@ -384,7 +384,14 @@ export function QuoteConfidenceCard({
           <div className="flex-shrink-0">
             <div className="relative" style={{ width: 48, height: 48 }}>
               <svg width={48} height={48} className="-rotate-90">
-                <circle cx={24} cy={24} r={20} fill="white" stroke="#D6DADE" strokeWidth={3} />
+                <circle
+                  cx={24}
+                  cy={24}
+                  r={20}
+                  fill={allSurveyDone ? '#0F1113' : 'white'}
+                  stroke={allSurveyDone ? '#0F1113' : '#D6DADE'}
+                  strokeWidth={3}
+                />
                 <motion.circle
                   cx={24}
                   cy={24}
@@ -401,7 +408,7 @@ export function QuoteConfidenceCard({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 {allSurveyDone ? (
-                  <Check className="h-5 w-5 text-[#0F1113]" />
+                  <Check className="h-5 w-5 text-[#FFFFFF]" />
                 ) : (
                   <>
                     <AlertTriangle className="h-3 w-3 fill-[#4B525A] text-[#4B525A]" />

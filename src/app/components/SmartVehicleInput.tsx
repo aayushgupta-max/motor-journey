@@ -545,8 +545,20 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       else setPhase('brand');
     }
     setExpanded(true);
-    focusInput();
   }, [mode, initialQueryProp]);
+
+  // Auto-focus textarea when page mode mounts (small delay so DOM is ready and Safari opens keyboard)
+  useEffect(() => {
+    if (mode !== 'page') return;
+    const timer = setTimeout(() => {
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [mode]);
 
   const normalizedQuery = normalizeVehicleQuery(query);
   const draftDetails = mergeDetails(details, parseDetailsFromText(query));

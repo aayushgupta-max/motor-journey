@@ -31,7 +31,7 @@ export function AiAssistantButton() {
       layout
       onClick={() => setExpanded(!expanded)}
       className="fixed bottom-6 right-4 z-40 flex items-center rounded-full bg-[#0F1113] shadow-lg active:scale-[0.98] transition-colors border border-[#1D1E20]"
-      style={{ padding: '6px 14px 6px 6px' }}
+      style={{ padding: expanded ? '6px 14px 6px 6px' : '6px' }}
       aria-label="AI Assistant"
     >
       <motion.div

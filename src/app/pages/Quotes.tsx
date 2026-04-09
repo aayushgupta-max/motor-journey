@@ -12,6 +12,7 @@ import { FlipPrice } from '../components/FlipPrice';
 import { useAuth } from '../components/AuthContext';
 import { PageHeaderBar } from '../components/PageHeaderBar';
 import { MulkiyaBottomSheet } from '../components/MulkiyaBottomSheet';
+import { EditDetailsSheet } from '../components/EditDetailsSheet';
 import {
   applyMockDlExtraction,
   buildVehicleSubtitle,
@@ -155,13 +156,14 @@ export default function Quotes() {
   const [profile, setProfile] = useState<QuoteFlowDetails>(() => buildInitialProfile(location.state, isLoggedIn));
   const [showMulkiyaSheet, setShowMulkiyaSheet] = useState(false);
   const [showDLSheet, setShowDLSheet] = useState(false);
+  const [showEditSheet, setShowEditSheet] = useState(false);
   const answeredCount = getCompletedFieldCount(profile, isLoggedIn);
-  const totalQuestions = getTotalFieldCount();
+  const totalQuestions = getTotalFieldCount(profile);
   const allSurveyDone = getNextQuotesAction(profile, isLoggedIn) === 'done';
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    setProfile((prev) => (prev.mobileNumber ? prev : { ...prev, mobileNumber: 'Captured' }));
+    setProfile((prev) => (prev.mobileNumber ? prev : { ...prev, mobileNumber: '+971 50 123 4567' }));
   }, [isLoggedIn]);
 
   const toggleFilter = (f: string) => {
@@ -236,22 +238,7 @@ export default function Quotes() {
                 <ClipboardList className={`w-3 h-3 ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`} />
                 <span className={`text-[10px] whitespace-nowrap ${allSurveyDone ? 'text-[#0F1113]' : 'text-[#5E6670]'}`}>{answeredCount}/{totalQuestions}</span>
                 <button
-                  onClick={() => {
-                    setProfile((prev) => ({
-                      ...prev,
-                      coverage: '',
-                      spec: '',
-                      city: '',
-                      expiry: '',
-                      nationality: '',
-                      dob: '',
-                      drivingExperience: '',
-                      accidentFreeMonths: '',
-                      noClaimProof: '',
-                      mulkiyaUploaded: false,
-                      dlUploaded: false,
-                    }));
-                  }}
+                  onClick={() => setShowEditSheet(true)}
                   className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0F1113]/10"
                 >
                   <Pencil className="w-2.5 h-2.5 text-[#0F1113]" />
@@ -576,6 +563,12 @@ export default function Quotes() {
         }}
       />
       <AiAssistantButton />
+      <EditDetailsSheet
+        open={showEditSheet}
+        onOpenChange={setShowEditSheet}
+        details={profile}
+        onSave={(updated) => setProfile(updated)}
+      />
     </div>
   );
 }

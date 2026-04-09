@@ -87,7 +87,7 @@ export function Header() {
               ) : (
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="text-sm bg-[#F3F5F7] text-[#0F1113] px-4 py-1.5 rounded-full hover:bg-[#D6DADE] transition-colors cursor-pointer"
+                  className="text-sm bg-[#F3F5F7] text-[#0F1113] h-9 px-4 rounded-full hover:bg-[#D6DADE] transition-colors cursor-pointer flex items-center"
                 >
                   Sign in
                 </button>

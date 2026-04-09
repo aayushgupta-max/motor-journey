@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router';
 import TextareaAutosize from 'react-textarea-autosize';
 import { SendHorizonal, Sparkles, Pencil, Check, Plus, X } from 'lucide-react';
 import { PageHeaderBar } from './PageHeaderBar';
+import { EditDetailsSheet } from './EditDetailsSheet';
 import {
   emptyQuoteFlowDetails,
   isQuoteUnlockReady,
   shouldRequireCondition,
+  applyMockMulkiyaExtraction,
+  applyMockDlExtraction,
+  mergeQuoteFlowDetails,
   type QuoteFlowDetails,
 } from '../lib/quoteFlow';
 import {
@@ -64,6 +68,13 @@ const primaryDetailFields: Array<keyof RequirementDetails> = ['brand', 'model', 
 const secondaryDetailFields: Array<keyof RequirementDetails> = ['city', 'expiry'];
 
 const cities = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Umm Al Quwain', 'Fujairah'];
+const nationalities = ['Indian', 'Pakistani', 'Filipino', 'Bangladeshi', 'Sri Lankan', 'Emirati', 'Egyptian', 'Jordanian', 'Lebanese', 'Syrian', 'British', 'American', 'Canadian', 'Australian', 'South African', 'Other'];
+const drivingExperienceOptions = ['Less than 1 year', '1-2 years', '3-5 years', '5-8 years', '8-10 years', '10+ years'];
+const accidentFreeOptions = ['Less than 6 months', '6-12 months', '1-2 years', '2-3 years', '3+ years', 'Never claimed'];
+const conditionOptions = ['Brand new', 'Pre-owned'];
+const coverageOptions = ['Comprehensive', 'Third Party'];
+const specOptions = ['GCC', 'Non-GCC'];
+const usageOptions = ['Personal', 'Commercial', 'Ride-hailing'];
 const conversationPrefixes = [
   'i have a ',
   'i have an ',
@@ -176,11 +187,13 @@ function getSentenceTemplates(
 
   if (category === 'model' && details.brand) {
     const modelFragment = getUnmatchedModelFragment(remainder || fragment, details.brand).toLowerCase();
-    return [...(modelsByBrand[details.brand] ?? [])]
+    const currentYear = new Date().getFullYear();
+    const models = [...(modelsByBrand[details.brand] ?? [])]
       .filter((model) => !modelFragment || model.toLowerCase().startsWith(modelFragment))
       .reverse()
-      .slice(0, 6)
-      .map((model) => `${prefix}${details.brand} ${model}`);
+      .slice(0, 6);
+    // Suggest model + current year together so user can pick in one tap
+    return models.map((model) => `${prefix}${details.brand} ${model}, ${currentYear} model`);
   }
 
   if (category === 'year' && details.brand && details.model) {
@@ -314,6 +327,52 @@ function parseDetailsFromText(inputText: string): Partial<RequirementDetails> {
     }
   }
 
+  // ── Personal details extraction ──
+  const foundNationality = nationalities.find((n) => lower.includes(n.toLowerCase()));
+  if (foundNationality) next.nationality = foundNationality;
+
+  // Name: "my name is X" or "I'm X" or "name: X"
+  const nameMatch = inputText.match(/(?:(?:my name is|i'?m|name[:\-]?\s*)\s+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})/i);
+  if (nameMatch?.[1]) next.name = nameMatch[1].trim();
+
+  // DOB: "born on X" or "dob: X" or date patterns
+  const dobMatch = inputText.match(/(?:born\s+(?:on\s+)?|dob[:\-]?\s*|date of birth[:\-]?\s*)(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  if (dobMatch?.[1]) next.dob = dobMatch[1].trim();
+
+  // Driving experience: "X years driving" or "driving for X years"
+  const expMatch = inputText.match(/(?:driving\s+(?:for\s+)?|experience[:\-]?\s*)(\d+)\s*(?:\+\s*)?years?/i)
+    ?? inputText.match(/(\d+)\s*(?:\+\s*)?years?\s+(?:of\s+)?(?:driving|experience)/i);
+  if (expMatch?.[1]) {
+    const years = parseInt(expMatch[1], 10);
+    if (years < 1) next.drivingExperience = 'Less than 1 year';
+    else if (years <= 2) next.drivingExperience = '1-2 years';
+    else if (years <= 5) next.drivingExperience = '3-5 years';
+    else if (years <= 8) next.drivingExperience = '5-8 years';
+    else if (years <= 10) next.drivingExperience = '8-10 years';
+    else next.drivingExperience = '10+ years';
+  }
+
+  // Accident-free / claims: "never claimed", "no accidents in X years", etc.
+  if (/\b(never claimed|no claims?|claim[- ]?free|never had an? (?:accident|claim))\b/i.test(inputText)) {
+    next.accidentFreeMonths = 'Never claimed';
+  } else if (/\b(no accident|accident[- ]?free)\b/i.test(inputText)) {
+    const claimPeriod = inputText.match(/(\d+)\s*(?:\+\s*)?years?\s+(?:no accident|accident[- ]?free|without|claim[- ]?free)/i)
+      ?? inputText.match(/(?:no accident|accident[- ]?free|without|claim[- ]?free)\s+(?:for\s+)?(\d+)\s*(?:\+\s*)?years?/i);
+    if (claimPeriod?.[1]) {
+      const yrs = parseInt(claimPeriod[1], 10);
+      if (yrs >= 3) next.accidentFreeMonths = '3+ years';
+      else if (yrs >= 2) next.accidentFreeMonths = '2-3 years';
+      else if (yrs >= 1) next.accidentFreeMonths = '1-2 years';
+      else next.accidentFreeMonths = '6-12 months';
+    } else {
+      next.accidentFreeMonths = '3+ years';
+    }
+  }
+
+  // Mobile number: +971 or 05X patterns
+  const phoneMatch = inputText.match(/(\+971\s*5\d[\s\-]?\d{3}[\s\-]?\d{4}|05\d[\s\-]?\d{3}[\s\-]?\d{4})/);
+  if (phoneMatch?.[1]) next.mobileNumber = phoneMatch[1].replace(/[\s\-]/g, '');
+
   return next;
 }
 
@@ -339,39 +398,66 @@ function getGuidancePrompts(details: RequirementDetails, inputText: string): Arr
   const prompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
 
   if (!details.condition && shouldRequireCondition(details.year)) {
-    prompts.push({ key: 'condition', text: 'It is brand new.' });
-    prompts.push({ key: 'condition', text: 'It is pre-owned.' });
+    prompts.push({ key: 'condition', text: 'It\'s brand new' });
+    prompts.push({ key: 'condition', text: 'It\'s pre-owned' });
     return prompts;
   }
 
   if (!details.coverage) {
-    prompts.push({ key: 'coverage', text: 'My previous insurance was Third Party.' });
-    prompts.push({ key: 'coverage', text: 'My previous insurance was Comprehensive.' });
+    prompts.push({ key: 'coverage', text: 'It was comprehensive' });
+    prompts.push({ key: 'coverage', text: 'It was third party' });
     return prompts;
   }
 
   if (!details.spec) {
-    prompts.push({ key: 'spec', text: 'My car is GCC spec.' });
-    prompts.push({ key: 'spec', text: 'My car is non-GCC spec.' });
+    prompts.push({ key: 'spec', text: 'It\'s GCC spec' });
+    prompts.push({ key: 'spec', text: 'It\'s non-GCC' });
+    return prompts;
+  }
+
+  if (!details.city) {
+    prompts.push({ key: 'city', text: 'Registered in Dubai' });
+    prompts.push({ key: 'city', text: 'Registered in Abu Dhabi' });
+    prompts.push({ key: 'city', text: 'Registered in Sharjah' });
+    return prompts;
+  }
+
+  if (!details.drivingExperience) {
+    prompts.push({ key: 'drivingExperience', text: '3-5 years driving' });
+    prompts.push({ key: 'drivingExperience', text: '5-8 years driving' });
+    prompts.push({ key: 'drivingExperience', text: '10+ years driving' });
+    return prompts;
+  }
+
+  if (!details.accidentFreeMonths) {
+    prompts.push({ key: 'accidentFreeMonths', text: 'Never claimed' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 3+ years' });
     return prompts;
   }
 
   return prompts;
 }
 
-function getNextQuestion(details: RequirementDetails): string {
+function getNextQuestion(details: RequirementDetails, quoteCount?: number): string {
   if (!details.brand) return 'Which make is your car?';
   if (!details.model) return `Which ${details.brand} model do you have?`;
   if (!details.year) return 'Which year model is it?';
   if (!details.condition && shouldRequireCondition(details.year)) {
-    return 'One more detail needed for quotes.\nIs the car brand new or pre-owned?';
+    return 'Almost there!\nIs it brand new or pre-owned?';
   }
+  const count = quoteCount ?? getEstimatedQuoteCount(details);
   if (isQuoteUnlockReady(details)) {
-    if (!details.coverage) return 'Quotes are ready.\nTell me if your previous insurance was Third Party or Comprehensive.';
-    if (!details.spec) return 'Quotes are ready.\nTell me if your car is GCC spec or non-GCC for better matching.';
-    return 'Quotes are ready.\nYou can continue adding details, or go ahead and see quotes.';
+    if (!details.coverage) return `🎉 ${count} quotes unlocked!\nWas your previous insurance third party or comprehensive?`;
+    if (!details.spec) return `${count} quotes and counting!\nIs your car GCC spec or non-GCC?`;
+    if (!details.city) return `${count} quotes ready!\nWhich emirate is the car registered in?`;
+    if (!details.nationality) return 'What is your nationality?\nThis helps us match insurer eligibility.';
+    if (!details.drivingExperience) return 'How many years of driving experience do you have?';
+    if (!details.accidentFreeMonths) return 'How long has it been since your last accident or claim?';
+    if (!details.dob) return 'What is your date of birth?\ne.g. 15 Mar 1990';
+    if (!details.name) return 'What is the vehicle owner\'s full name?\nAs it appears on the Emirates ID.';
+    return `${count} quotes ready for you!\nAdd more details to refine, or go ahead and check them out.`;
   }
-  return 'Anything else you want us to consider before showing quotes?';
+  return 'Anything else you\'d like us to consider?';
 }
 
 function getEstimatedQuoteCount(details: RequirementDetails): number {
@@ -398,7 +484,7 @@ function getCoreStatusText(details: RequirementDetails, quoteCount: number): str
   if (shouldRequireCondition(details.year) && !details.condition) missingCore.push('brand new status');
 
   if (missingCore.length === 0) {
-    return `${quoteCount} quotes ready so far`;
+    return `${quoteCount} quotes unlocked`;
   }
 
   if (missingCore.length === 1) {
@@ -460,7 +546,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [details, setDetails] = useState<RequirementDetails>(emptyDetails);
   const [editMode, setEditMode] = useState(false);
-  const [editingDraft, setEditingDraft] = useState<RequirementDetails>(emptyDetails);
   const [isExtracting, setIsExtracting] = useState(false);
   const [highlightedFields, setHighlightedFields] = useState<Array<keyof RequirementDetails>>([]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
@@ -511,7 +596,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const ghost = normalizedQuery === query.toLowerCase().trim()
     ? getGhostText(query, currentSuggestions)
     : null;
-  const guidancePrompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
+  const guidancePrompts = phase === 'done' ? getGuidancePrompts(details, query) : [];
   const isQuoteReady = isQuoteUnlockReady(details);
   const quoteCount = getEstimatedQuoteCount(details);
   const coreStatusText = getCoreStatusText(details, quoteCount);
@@ -521,7 +606,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const visibleSecondaryFields = ['coverage', 'spec', 'condition', ...secondaryDetailFields].filter((field) => details[field as keyof RequirementDetails]) as Array<keyof RequirementDetails>;
   const hasExtraction = messages.length > 0 || Object.values(details).some(Boolean);
 
-  const filteredSuggestions = currentSuggestions;
+  const filteredSuggestions = guidancePrompts.length > 0 ? [] : currentSuggestions;
 
   const focusInput = () => {
     requestAnimationFrame(() => {
@@ -562,15 +647,23 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
     setHighlightedFields(newlyCapturedFields);
 
-    const lastCapturedField = newlyCapturedFields[newlyCapturedFields.length - 1];
-    const chipNode = chipRefs.current[lastCapturedField];
-    if (chipNode) {
-      chipNode.scrollIntoView({
-        behavior: 'smooth',
-        inline: 'center',
-        block: 'nearest',
-      });
-    }
+    // Auto-scroll rail to the end to show latest chip
+    requestAnimationFrame(() => {
+      const lastCapturedField = newlyCapturedFields[newlyCapturedFields.length - 1];
+      const chipNode = chipRefs.current[lastCapturedField];
+      if (chipNode) {
+        chipNode.scrollIntoView({
+          behavior: 'smooth',
+          inline: 'end',
+          block: 'nearest',
+        });
+      }
+      // Also scroll the rail container to far right
+      if (detailRailRef.current?.parentElement) {
+        const container = detailRailRef.current.parentElement;
+        container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+      }
+    });
 
     if (highlightTimerRef.current) {
       window.clearTimeout(highlightTimerRef.current);
@@ -589,6 +682,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
     const syncViewportHeight = () => {
       setViewportHeight(viewport?.height ?? window.innerHeight);
+      // After Safari resizes for keyboard, ensure input stays visible
+      requestAnimationFrame(() => {
+        inputBarRef.current?.scrollIntoView({ block: 'end', behavior: 'instant' });
+      });
     };
 
     syncViewportHeight();
@@ -649,7 +746,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setMessages([]);
     setDetails(emptyDetails);
     setEditMode(false);
-    setEditingDraft(emptyDetails);
     setIsExtracting(false);
     setHighlightedFields([]);
     setAttachments([]);
@@ -707,17 +803,32 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     if (!input.trim() && attachments.length === 0) return;
 
     const extracted = parseDetailsFromText(input);
-    const nextDetails = mergeDetails(details, extracted);
+    let nextDetails = mergeDetails(details, extracted);
+
+    // Auto-extract from uploaded mulkiya / DL attachments
+    const currentAttachments = [...attachments];
+    const hasMulkiya = currentAttachments.some((a) =>
+      /mulkiya|registration\s*card|vehicle\s*card/i.test(a.name)
+    );
+    const hasDL = currentAttachments.some((a) =>
+      /driving\s*licen[sc]e|^dl[^a-z]|_dl\b/i.test(a.name)
+    );
+    if (hasMulkiya) {
+      nextDetails = mergeDetails(nextDetails, applyMockMulkiyaExtraction(nextDetails) as Partial<RequirementDetails>);
+    }
+    if (hasDL) {
+      nextDetails = mergeDetails(nextDetails, applyMockDlExtraction(nextDetails) as Partial<RequirementDetails>);
+    }
+
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
-        text: input.trim() || `Added ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}.`,
+        text: input.trim() || `Added ${currentAttachments.length} attachment${currentAttachments.length > 1 ? 's' : ''}.`,
         role: 'user',
       },
     ]);
     setDetails(nextDetails);
-    setEditingDraft(nextDetails);
     setQuery('');
     setAttachments([]);
     setIsExtracting(true);
@@ -726,13 +837,23 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       window.clearTimeout(extractionTimerRef.current);
     }
     extractionTimerRef.current = window.setTimeout(() => {
+      let assistantText = '';
+      if (hasMulkiya && hasDL) {
+        assistantText = '✅ Got it! Extracted details from your Mulkiya and Driving License.\n' + getNextQuestion(nextDetails);
+      } else if (hasMulkiya) {
+        assistantText = '✅ Mulkiya scanned! Extracted your car details and registration info.\n' + getNextQuestion(nextDetails);
+      } else if (hasDL) {
+        assistantText = '✅ Driving License scanned! Extracted your DOB and driving experience.\n' + getNextQuestion(nextDetails);
+      } else {
+        assistantText = getNextQuestion(nextDetails);
+      }
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, text: getNextQuestion(nextDetails), role: 'assistant' },
+        { id: Date.now() + 1, text: assistantText, role: 'assistant' },
       ]);
       setIsExtracting(false);
       extractionTimerRef.current = null;
-    }, 1400);
+    }, hasMulkiya || hasDL ? 2000 : 1400);
 
     const parsed = parseVehicleInput(normalizeVehicleQuery(input));
     if (parsed?.brand && parsed?.model && parsed?.year && shouldRequireCondition(parsed.year) && parsed?.isBrandNew === undefined) {
@@ -744,6 +865,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     } else {
       setPhase('done');
     }
+  };
+
+  const handleGuidancePromptClick = (text: string) => {
+    handleSubmit(text);
   };
 
   const goToQuotes = () => {
@@ -766,10 +891,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }, 150);
   };
 
-  const saveEditingDraft = () => {
-    setDetails(editingDraft);
-    setEditMode(false);
-  };
 
   const handleFilePick = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -847,14 +968,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           />
         </div>
 
+        {hasExtraction && (
         <div ref={questionRef} className="relative z-10 bg-[#F3F5F7] px-5 pt-3 pb-3 shadow-[0_14px_30px_rgba(15,17,19,0.10)] flex-shrink-0">
-          {!hasExtraction ? (
-            <p className="text-[36px] leading-tight font-bold text-[#0F1113]">
-              What car do you own?
-            </p>
-          ) : (
-            <>
-              <div className="mb-1.5 flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[16px] leading-5 font-semibold text-[#0F1113]">
                     {visiblePrimaryFields.length > 0 ? visiblePrimaryFields.map((field) => details[field]).join(' · ') : 'Extracting vehicle details'}
@@ -863,18 +979,31 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditingDraft(details);
-                    setEditMode((prev) => !prev);
-                  }}
+                  onClick={() => setEditMode(true)}
                   className="inline-flex h-7 items-center gap-1 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-2.5 text-[11px] text-[#0F1113]"
                 >
                   <Pencil className="h-3 w-3" />
                   Edit
                 </button>
               </div>
-              <div className="-mx-5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {(visibleSecondaryFields.length > 0 || missingPrimaryFields.length > 0) && (
+              <div className="-mx-5 mt-1.5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <div ref={detailRailRef} className="flex min-w-max gap-1.5 pb-0.5">
+                  {missingPrimaryFields.map((field) => (
+                    <div
+                      key={field}
+                      ref={(node) => {
+                        chipRefs.current[field] = node;
+                      }}
+                      className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-[#FAFBFC] px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
+                        highlightedFields.includes(field)
+                          ? 'border-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)] text-[#0F1113]'
+                          : 'border-[#B0B6BE] text-[#8A919A]'
+                      }`}
+                    >
+                      <span>{detailLabels[field]}</span>
+                    </div>
+                  ))}
                   {visibleSecondaryFields.map((field) => (
                     <div
                       key={field}
@@ -891,58 +1020,32 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                       <span className="font-medium text-[#0F1113]">{details[field]}</span>
                     </div>
                   ))}
-                  {missingPrimaryFields.map((field) => (
-                    <div
-                      key={field}
-                      ref={(node) => {
-                        chipRefs.current[field] = node;
-                      }}
-                      className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-[#FAFBFC] px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
-                        highlightedFields.includes(field)
-                          ? 'border-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)] text-[#0F1113]'
-                          : 'border-[#B0B6BE] text-[#8A919A]'
-                      }`}
-                    >
-                      <span>{detailLabels[field]}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
-              {editMode && (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(Object.keys(detailLabels) as Array<keyof RequirementDetails>).map((field) => (
-                    <label key={field} className="rounded-xl bg-[#FAFBFC] px-3 py-2">
-                      <span className="mb-1 block text-[11px] text-[#5E6670]">{detailLabels[field]}</span>
-                      <input
-                        value={editingDraft[field]}
-                        onChange={(e) => setEditingDraft((prev) => ({ ...prev, [field]: e.target.value }))}
-                        className="h-8 w-full bg-transparent text-xs text-[#0F1113] outline-none"
-                      />
-                    </label>
-                  ))}
-                  <div className="col-span-2 flex items-center gap-2 pt-1">
-                    <button type="button" onClick={saveEditingDraft} className="h-9 rounded-full bg-[#0F1113] px-4 text-sm text-white">Save</button>
-                    <button type="button" onClick={() => setEditMode(false)} className="h-9 rounded-full border border-[#D6DADE] px-4 text-sm text-[#0F1113]">Cancel</button>
-                  </div>
-                </div>
               )}
-            </>
-          )}
+              <EditDetailsSheet
+                open={editMode}
+                onOpenChange={setEditMode}
+                details={details}
+                onSave={(updated) => setDetails(updated)}
+              />
         </div>
+        )}
 
         {/* Conversation + details */}
         <div
           ref={suggestionsScrollRef}
           data-scroll-area
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC] [touch-action:pan-y]"
-          style={{
-            height: suggestionsHeight !== null ? `${suggestionsHeight}px` : undefined,
-            flex: suggestionsHeight !== null ? undefined : 1,
-            WebkitOverflowScrolling: 'touch',
-            overscrollBehavior: 'contain',
-          }}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC] [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] [touch-action:pan-y]"
         >
           <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
+            {/* Welcome message — always visible */}
+            <div className="mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              <div className="space-y-1.5">
+                <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
+                <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">Tell us about your car and requirements, we'll find you the best insurance quotes instantly.</p>
+              </div>
+            </div>
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -982,12 +1085,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         {/* Bottom input */}
         <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
           {messages.length === 0 && (
-            <p className="mb-1.5 text-[12px] text-[#5E6670]">
-              Type naturally and we will capture important details for better quotes.
+            <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
+              Type naturally and we will capture important details.
             </p>
           )}
           {(filteredSuggestions.length > 0 || guidancePrompts.length > 0) && (
-            <div className="mb-1.5 rounded-[18px] border border-[#D6DADE] bg-[#F3F5F7] p-[2px] shadow-[0_1px_2px_rgba(15,17,19,0.04)]">
+            <div className="mb-[8px] rounded-[18px] border-[0.5px] border-[#E8EAED] bg-[#F3F5F7] p-[1px]">
               <div className="overflow-hidden rounded-[16px] bg-[#FFFFFF]">
                 {guidancePrompts.slice(0, 3).map((prompt, index) => (
                   <button
@@ -1058,7 +1161,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               />
               <div className="relative min-w-0 flex-1">
                 {ghost && query.length > 0 && (
-                  <div className="absolute inset-x-0 top-0 pointer-events-none z-0 whitespace-pre-wrap break-words text-[14px] leading-5">
+                  <div className="absolute inset-x-0 top-0 pointer-events-none z-0 whitespace-nowrap overflow-hidden text-ellipsis text-[14px] leading-5">
                     <span className="text-transparent">{query}</span>
                     <span className="text-[#B0B6BE]">{ghost.slice(query.length)}</span>
                   </div>
@@ -1072,6 +1175,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    // On Safari, scroll the input bar into view when keyboard opens
+                    setTimeout(() => {
+                      inputBarRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                    }, 300);
+                  }}
                   placeholder="Describe your car and requirement..."
                   className="relative z-10 m-0 block w-full resize-none bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
                 />

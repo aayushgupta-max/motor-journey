@@ -37,7 +37,7 @@ export function Header() {
 
   return (
     <>
-      <header className="bg-[#2D2D2D] sticky top-0 z-50">
+      <header className="bg-[#0F1113] sticky top-0 z-50 border-b border-[#1D1E20]">
         <div className="container mx-auto px-5 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -57,9 +57,9 @@ export function Header() {
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setShowAvatarMenu(!showAvatarMenu)}
-                    className="w-9 h-9 rounded-full bg-[#D4D4D4] flex items-center justify-center hover:bg-[#E8E8E8] transition-colors cursor-pointer"
+                    className="w-9 h-9 rounded-full bg-[#F3F5F7] flex items-center justify-center hover:bg-[#D6DADE] transition-colors cursor-pointer"
                   >
-                    <User className="w-4.5 h-4.5 text-[#2D2D2D]" />
+                    <User className="w-4.5 h-4.5 text-[#0F1113]" />
                   </button>
                   <AnimatePresence>
                     {showAvatarMenu && (
@@ -68,14 +68,14 @@ export function Header() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-12 z-20 bg-white rounded-xl border border-gray-100 py-1 min-w-[160px] overflow-hidden shadow-lg shadow-black/10"
+                        className="absolute right-0 top-12 z-20 bg-[#FFFFFF] rounded-xl border border-[#D6DADE] py-1 min-w-[160px] overflow-hidden shadow-lg shadow-black/10"
                       >
                         <button
                           onClick={() => {
                             setShowAvatarMenu(false);
                             setShowLogoutConfirm(true);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-xs text-gray-600 hover:bg-[#F7F7F7] flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-4 py-2.5 text-xs text-[#4B525A] hover:bg-[#F3F5F7] flex items-center gap-2 transition-colors"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           Sign out
@@ -87,7 +87,7 @@ export function Header() {
               ) : (
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="text-sm bg-[#D4D4D4] text-[#2D2D2D] px-4 py-1.5 rounded-full hover:bg-[#E8E8E8] transition-colors cursor-pointer"
+                  className="text-sm bg-[#F3F5F7] text-[#0F1113] px-4 py-1.5 rounded-full hover:bg-[#D6DADE] transition-colors cursor-pointer"
                 >
                   Sign in
                 </button>
@@ -113,7 +113,7 @@ export function Header() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-[#0F1113]/45"
               onClick={() => setShowLogoutConfirm(false)}
             />
             <motion.div
@@ -121,25 +121,25 @@ export function Header() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="relative bg-white rounded-2xl p-6 mx-4 max-w-xs w-full text-center z-10 shadow-xl"
+              className="relative bg-[#FFFFFF] rounded-2xl p-6 mx-4 max-w-xs w-full text-center z-10 shadow-xl border border-[#D6DADE]"
             >
-              <div className="w-12 h-12 rounded-full bg-[#F7F7F7] flex items-center justify-center mx-auto mb-3">
-                <LogOut className="w-5 h-5 text-[#2D2D2D]" />
+              <div className="w-12 h-12 rounded-full bg-[#F3F5F7] flex items-center justify-center mx-auto mb-3">
+                <LogOut className="w-5 h-5 text-[#0F1113]" />
               </div>
-              <h3 className="text-sm font-medium text-[#2D2D2D] mb-1">Sign out?</h3>
-              <p className="text-xs text-gray-500 mb-4">
+              <h3 className="text-sm font-medium text-[#0F1113] mb-1">Sign out?</h3>
+              <p className="text-xs text-[#5E6670] mb-4">
                 Are you sure you want to sign out? You'll need to sign in again to access your quotes.
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 h-10 rounded-xl bg-[#F7F7F7] text-[#2D2D2D] text-sm transition-all active:scale-[0.98]"
+                  className="flex-1 h-10 rounded-xl bg-[#F3F5F7] text-[#0F1113] text-sm transition-all active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="flex-1 h-10 rounded-xl bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98]"
+                  className="flex-1 h-10 rounded-xl bg-[#0F1113] text-[#FFFFFF] text-sm transition-all active:scale-[0.98]"
                 >
                   Sign out
                 </button>

@@ -51,11 +51,11 @@ interface QuoteConfidenceCardProps {
 // Collapsed answer pill
 function ConfirmedAnswer({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
   return (
-    <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
+    <div className="flex items-center justify-between bg-[#FFFFFF]/70 rounded-lg px-3 py-2">
       <div className="flex items-center gap-2">
-        <Check className="w-3 h-3 text-[#2D2D2D]" />
-        <span className="text-xs text-[#2D2D2D]/70">{label}</span>
-        <span className="text-xs font-medium text-[#2D2D2D]">{value}</span>
+        <Check className="w-3 h-3 text-[#0F1113]" />
+        <span className="text-xs text-[#4B525A]">{label}</span>
+        <span className="text-xs font-medium text-[#0F1113]">{value}</span>
       </div>
     </div>
   );
@@ -77,18 +77,18 @@ function SmartInput({ placeholder, onSubmit }: { placeholder: string; onSubmit: 
 
   return (
     <div className="mt-2">
-      <div className={`flex items-center gap-2 bg-[#F7F7F7] rounded-lg px-3 h-9 transition-colors ${error ? 'ring-1 ring-red-300' : ''}`}>
-        <MessageSquare className="w-3 h-3 text-gray-400 flex-shrink-0" />
+      <div className={`flex items-center gap-2 bg-[#FAFBFC] rounded-lg px-3 h-9 transition-colors ${error ? 'ring-1 ring-red-300' : 'ring-1 ring-[#D6DADE]'}`}>
+        <MessageSquare className="w-3 h-3 text-[#8A919A] flex-shrink-0" />
         <input
           type="text"
           value={text}
           onChange={(e) => { setText(e.target.value); setError(false); }}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           placeholder={placeholder}
-          className="flex-1 bg-transparent text-xs text-[#2D2D2D] placeholder-gray-300 outline-none"
+          className="flex-1 bg-transparent text-xs text-[#0F1113] placeholder:text-[#B0B6BE] outline-none"
         />
         {text && (
-          <button onClick={handleSubmit} className="text-[10px] font-medium text-[#2D2D2D] bg-[#E0E0E0] px-2 py-0.5 rounded-full flex-shrink-0">
+          <button onClick={handleSubmit} className="text-[10px] font-medium text-[#0F1113] bg-[#D6DADE] px-2 py-0.5 rounded-full flex-shrink-0">
             Send
           </button>
         )}
@@ -149,7 +149,7 @@ export function QuoteConfidenceCard({
         <div
           className="absolute inset-0 rounded-[20px]"
           style={{
-            background: 'conic-gradient(from var(--border-angle, 0deg), transparent 60%, #D4D4D4 78%, #666666 82%, #D4D4D4 86%, transparent 95%)',
+            background: 'conic-gradient(from var(--border-angle, 0deg), transparent 60%, #D6DADE 78%, #4B525A 82%, #D6DADE 86%, transparent 95%)',
             animation: 'shooting-star-spin 3s linear infinite',
           }}
         />
@@ -159,8 +159,8 @@ export function QuoteConfidenceCard({
         className={`relative rounded-[18px] p-4`}
         style={{
           background: allSurveyDone
-            ? 'linear-gradient(135deg, #F0F0F0 0%, #E0E0E0 100%)'
-            : 'linear-gradient(135deg, #E8E8E8 0%, #CFCFCF 100%)',
+            ? 'linear-gradient(135deg, #FAFBFC 0%, #D6DADE 100%)'
+            : 'linear-gradient(135deg, #F3F5F7 0%, #B0B6BE 100%)',
         }}
       >
         {/* Header */}
@@ -168,11 +168,11 @@ export function QuoteConfidenceCard({
           <div className="flex-shrink-0">
             <div className="relative" style={{ width: 48, height: 48 }}>
               <svg width={48} height={48} className="-rotate-90">
-                <circle cx={24} cy={24} r={20} fill="white" stroke="#D4D4D4" strokeWidth={3} />
+                <circle cx={24} cy={24} r={20} fill="white" stroke="#D6DADE" strokeWidth={3} />
                 <motion.circle
                   cx={24} cy={24} r={20}
                   fill="none"
-                  stroke="#2D2D2D"
+                  stroke="#0F1113"
                   strokeWidth={3}
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 20}
@@ -183,15 +183,15 @@ export function QuoteConfidenceCard({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 {allSurveyDone ? (
-                  <Check className="w-5 h-5 text-[#2D2D2D]" />
+                  <Check className="w-5 h-5 text-[#0F1113]" />
                 ) : (
                   <>
-                    <AlertTriangle className="w-3 h-3 text-[#2D2D2D]/60 fill-[#2D2D2D]/60" />
+                    <AlertTriangle className="w-3 h-3 text-[#4B525A] fill-[#4B525A]" />
                     <motion.span
                       key={confidencePct}
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-[10px] font-bold text-[#2D2D2D] leading-none mt-0.5"
+                      className="text-[10px] font-bold text-[#0F1113] leading-none mt-0.5"
                     >
                       {confidencePct}%
                     </motion.span>
@@ -201,10 +201,10 @@ export function QuoteConfidenceCard({
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-[#2D2D2D]">
+            <p className="text-sm font-bold text-[#0F1113]">
               {allSurveyDone ? 'Best price unlocked' : 'Low Quote Confidence Score'}
             </p>
-            <p className="text-xs text-[#2D2D2D]/70 leading-tight mt-0.5">
+            <p className="text-xs text-[#4B525A] leading-tight mt-0.5">
               {allSurveyDone
                 ? 'Your quotes are now fully personalized'
                 : remaining === 1
@@ -249,9 +249,9 @@ export function QuoteConfidenceCard({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white rounded-[10px] p-4"
+                  className="bg-[#FFFFFF] rounded-[10px] p-4"
                 >
-                  <p className="text-sm text-[#2D2D2D] mb-3">Is your car GCC spec or Non-GCC?</p>
+                  <p className="text-sm text-[#0F1113] mb-3">Is your car GCC spec or Non-GCC?</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -259,7 +259,7 @@ export function QuoteConfidenceCard({
                         setTimeout(() => setSurveyStep(1), 300);
                       }}
                       className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                        gccSelection === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
+                        gccSelection === 'yes' ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#F3F5F7] text-[#0F1113]'
                       }`}
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -271,7 +271,7 @@ export function QuoteConfidenceCard({
                         setTimeout(() => setSurveyStep(1), 300);
                       }}
                       className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                        gccSelection === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
+                        gccSelection === 'no' ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#FAFBFC] text-[#0F1113]'
                       }`}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -300,17 +300,17 @@ export function QuoteConfidenceCard({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white rounded-[10px] p-4 flex flex-col items-center justify-center"
+                  className="bg-[#FFFFFF] rounded-[10px] p-4 flex flex-col items-center justify-center"
                 >
-                  <div className="w-12 h-12 rounded-[8px] bg-[#F5F5F5] flex items-center justify-center mb-3">
-                    <Upload className="w-5 h-5 text-[#666666]" />
+                  <div className="w-12 h-12 rounded-[8px] bg-[#F3F5F7] flex items-center justify-center mb-3">
+                    <Upload className="w-5 h-5 text-[#5E6670]" />
                   </div>
-                  <p className="text-sm text-[#2D2D2D] mb-1">Upload your Driving License</p>
-                  <p className="text-[11px] text-[#2D2D2D]/40 mb-4">We'll auto-fill your details instantly</p>
+                  <p className="text-sm text-[#0F1113] mb-1">Upload your Driving License</p>
+                  <p className="text-[11px] text-[#5E6670] mb-4">We'll auto-fill your details instantly</p>
                   <div className="flex gap-2 w-full">
                     <button
                       onClick={() => setShowDLSheet(true)}
-                      className="flex-1 h-10 rounded-[8px] bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                      className="flex-1 h-10 rounded-[8px] bg-[#0F1113] text-[#FFFFFF] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       Upload DL
@@ -320,7 +320,7 @@ export function QuoteConfidenceCard({
                         setDlSkipped(true);
                         setSurveyStep(2);
                       }}
-                      className="flex-1 h-10 rounded-[8px] bg-[#F7F7F7] text-[#2D2D2D]/60 text-sm transition-all active:scale-[0.98] flex items-center justify-center"
+                      className="flex-1 h-10 rounded-[8px] bg-[#FAFBFC] text-[#5E6670] text-sm transition-all active:scale-[0.98] flex items-center justify-center"
                     >
                       Skip for now
                     </button>
@@ -335,11 +335,11 @@ export function QuoteConfidenceCard({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white rounded-[10px] p-4"
+                  className="bg-[#FFFFFF] rounded-[10px] p-4"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-4 h-4 text-[#2D2D2D]/40" />
-                    <p className="text-sm text-[#2D2D2D]">How long since your last claim?</p>
+                    <Calendar className="w-4 h-4 text-[#5E6670]" />
+                    <p className="text-sm text-[#0F1113]">How long since your last claim?</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {['Never claimed', '12+ months', '6–12 months', 'Less than 6 months'].map((opt) => (
@@ -357,7 +357,7 @@ export function QuoteConfidenceCard({
                           }
                         }}
                         className={`h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center ${
-                          claimMonths === opt ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
+                          claimMonths === opt ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#FAFBFC] text-[#0F1113]'
                         }`}
                       >
                         {opt}
@@ -393,13 +393,13 @@ export function QuoteConfidenceCard({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white rounded-[10px] p-4"
+                  className="bg-[#FFFFFF] rounded-[10px] p-4"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <ShieldCheck className="w-4 h-4 text-[#2D2D2D]/40" />
-                    <p className="text-sm text-[#2D2D2D]">Do you have a No Claim Certificate?</p>
+                    <ShieldCheck className="w-4 h-4 text-[#5E6670]" />
+                    <p className="text-sm text-[#0F1113]">Do you have a No Claim Certificate?</p>
                   </div>
-                  <p className="text-[11px] text-[#2D2D2D]/40 mb-3 ml-6">This can reduce your premium by up to 25%</p>
+                  <p className="text-[11px] text-[#5E6670] mb-3 ml-6">This can reduce your premium by up to 25%</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -407,7 +407,7 @@ export function QuoteConfidenceCard({
                         if (dlSkipped) setTimeout(() => setSurveyStep(4), 300);
                       }}
                       className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                        hasNoClaimProof === 'yes' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#EFEFEF] text-[#2D2D2D]'
+                        hasNoClaimProof === 'yes' ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#F3F5F7] text-[#0F1113]'
                       }`}
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -419,7 +419,7 @@ export function QuoteConfidenceCard({
                         if (dlSkipped) setTimeout(() => setSurveyStep(4), 300);
                       }}
                       className={`flex-1 h-10 rounded-[8px] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                        hasNoClaimProof === 'no' ? 'bg-[#2D2D2D] text-[#D4D4D4]' : 'bg-[#F7F7F7] text-[#2D2D2D]'
+                        hasNoClaimProof === 'no' ? 'bg-[#0F1113] text-[#FFFFFF]' : 'bg-[#FAFBFC] text-[#0F1113]'
                       }`}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -448,16 +448,16 @@ export function QuoteConfidenceCard({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white rounded-[10px] p-4 flex flex-col items-center justify-center"
+                  className="bg-[#FFFFFF] rounded-[10px] p-4 flex flex-col items-center justify-center"
                 >
-                  <div className="w-12 h-12 rounded-[8px] bg-[#F5F5F5] flex items-center justify-center mb-3">
-                    <Upload className="w-5 h-5 text-[#666666]" />
+                  <div className="w-12 h-12 rounded-[8px] bg-[#F3F5F7] flex items-center justify-center mb-3">
+                    <Upload className="w-5 h-5 text-[#5E6670]" />
                   </div>
-                  <p className="text-sm text-[#2D2D2D] mb-1">Last step — Upload your Driving License</p>
-                  <p className="text-[11px] text-[#2D2D2D]/40 mb-4">Get more accurate quotes with your DL details</p>
+                  <p className="text-sm text-[#0F1113] mb-1">Last step — Upload your Driving License</p>
+                  <p className="text-[11px] text-[#5E6670] mb-4">Get more accurate quotes with your DL details</p>
                   <button
                     onClick={() => setShowDLSheet(true)}
-                    className="w-full h-10 rounded-[8px] bg-[#2D2D2D] text-[#D4D4D4] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                    className="w-full h-10 rounded-[8px] bg-[#0F1113] text-[#FFFFFF] text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     Upload DL

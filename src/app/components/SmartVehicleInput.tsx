@@ -1146,9 +1146,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   key={`${prompt.key}-${prompt.text}`}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleGuidancePromptClick(prompt.text)}
-                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-sm text-[#4B525A] transition-colors hover:bg-[#FAFBFC] active:scale-[0.97]"
+                  className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
-                  <Sparkles className="h-4 w-4 text-[#B0B6BE]" />
                   <span className="whitespace-nowrap">{prompt.text}</span>
                 </button>
               ))}
@@ -1156,10 +1155,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={goToQuotes}
-                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-[#F3F5F7] px-3 py-1.5 text-sm font-medium text-[#0F1113] transition-colors hover:bg-[#E8EAED] active:scale-[0.97]"
+                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[999px] bg-[#F3F5F7] px-2.5 py-1.5 text-[13px] font-medium text-[#0F1113] transition-all hover:bg-[#E8EAED] active:scale-[0.97]"
                 >
                   <span className="whitespace-nowrap">{`See ${quoteCount} quotes`}</span>
-                  <ArrowRight className="h-4 w-4 text-[#5E6670]" />
+                  <ArrowRight className="h-3.5 w-3.5 text-[#5E6670]" />
                 </button>
               )}
               {filteredSuggestions.map((suggestion) => (
@@ -1167,9 +1166,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   key={suggestion.text}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-sm text-[#4B525A] transition-colors hover:bg-[#FAFBFC] active:scale-[0.97]"
+                  className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
-                  <Sparkles className="h-4 w-4 text-[#B0B6BE]" />
                   <span className="whitespace-nowrap">{suggestion.label}</span>
                 </button>
               ))}

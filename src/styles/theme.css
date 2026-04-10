@@ -183,16 +183,7 @@
   */
 
   html {
-    font-size: var(--font-size);
-  }
-
-  /* Scale everything up on larger phones (>400px CSS width).
-     Tailwind v4 uses rem for spacing, heights, font sizes, radius —
-     so bumping root font-size scales fonts + buttons + padding + gaps. */
-  @media (min-width: 400px) and (max-width: 768px) {
-    html {
-      font-size: calc(var(--font-size) * 1.1); /* 16px → 17.6px → all rem values scale ~10% */
-    }
+    font-size: calc(var(--font-size) * 1.12); /* 16px → 17.92px → all rem values scale ~12% */
   }
 
   h1 {

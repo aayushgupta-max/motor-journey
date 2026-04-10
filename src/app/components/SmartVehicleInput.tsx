@@ -1179,7 +1179,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
             Type naturally and we will capture important details.
           </p>
           {!isExtracting && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
-            <div className="mb-1.5 -mx-5 px-5 flex gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mb-1.5 -mx-5 px-5 flex gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [touch-action:pan-x] [-webkit-overflow-scrolling:touch]">
               {guidancePrompts.map((prompt) => (
                 <button
                   key={`${prompt.key}-${prompt.text}`}

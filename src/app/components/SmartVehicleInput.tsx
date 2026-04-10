@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import TextareaAutosize from 'react-textarea-autosize';
 import { SendHorizonal, Sparkles, Pencil, Check, Plus, X, ArrowRight, ClipboardList } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useAuth } from './AuthContext';
 import { PageHeaderBar } from './PageHeaderBar';
 import { EditDetailsSheet } from './EditDetailsSheet';
 import {
@@ -11,6 +13,9 @@ import {
   applyMockMulkiyaExtraction,
   applyMockDlExtraction,
   mergeQuoteFlowDetails,
+  getCompletedFieldCount,
+  getTotalFieldCount,
+  getConfidenceScore,
   type QuoteFlowDetails,
 } from '../lib/quoteFlow';
 import {
@@ -42,30 +47,6 @@ type AttachmentItem = {
 
 const emptyDetails: RequirementDetails = emptyQuoteFlowDetails;
 
-const detailLabels: Record<keyof RequirementDetails, string> = {
-  brand: 'Car brand',
-  model: 'Car model',
-  year: 'Year',
-  condition: 'Condition',
-  coverage: 'Previous repair type',
-  spec: 'GCC spec',
-  budget: 'Budget',
-  city: 'Registration city',
-  usage: 'Usage',
-  expiry: 'Previous policy expiry',
-  name: 'Owner name',
-  dob: 'Date of birth',
-  nationality: 'Nationality',
-  drivingExperience: 'Driving experience',
-  accidentFreeMonths: 'Months without accident',
-  noClaimProof: 'No-claim proof',
-  mobileNumber: 'Mobile number',
-  mulkiyaUploaded: 'Mulkiya',
-  dlUploaded: 'Driving license',
-};
-
-const primaryDetailFields: Array<keyof RequirementDetails> = ['brand', 'model', 'year'];
-const secondaryDetailFields: Array<keyof RequirementDetails> = ['city', 'expiry'];
 
 const cities = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Umm Al Quwain', 'Fujairah'];
 const nationalities = ['Indian', 'Pakistani', 'Filipino', 'Bangladeshi', 'Sri Lankan', 'Emirati', 'Egyptian', 'Jordanian', 'Lebanese', 'Syrian', 'British', 'American', 'Canadian', 'Australian', 'South African', 'Other'];
@@ -478,7 +459,7 @@ function getGuidancePrompts(
 
   const prompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
   if (shouldAskRefineChoice) {
-    prompts.push({ key: 'coverage', text: 'Yes, ask!' });
+    prompts.push({ key: 'coverage', text: 'Yes, ask and improve confidence!' });
     return prompts;
   }
 
@@ -556,8 +537,8 @@ function getNextQuestion(details: RequirementDetails, quoteCount?: number): stri
   return 'Anything else you\'d like us to consider?';
 }
 
-function getPostUnlockQuestion(quoteCount: number): string {
-  return `🎉 ${quoteCount} quotes unlocked!\nWould you like to refine your requirement for more accurate quotes, or see the quotes now?`;
+function getPostUnlockQuestion(quoteCount: number, confidencePct: number): string {
+  return `🎉 ${quoteCount} quotes unlocked!\n⚠️ ${confidencePct}% confidence — add more details to improve pricing accuracy.`;
 }
 
 function getEstimatedQuoteCount(details: RequirementDetails): number {
@@ -573,25 +554,6 @@ function getEstimatedQuoteCount(details: RequirementDetails): number {
   if (details.expiry) count += 1;
 
   return Math.max(0, Math.min(28, count));
-}
-
-function getCoreStatusText(details: RequirementDetails, quoteCount: number): string {
-  const missingCore: string[] = [];
-
-  if (!details.brand) missingCore.push('make');
-  if (!details.model) missingCore.push('model');
-  if (!details.year) missingCore.push('year');
-  if (shouldRequireCondition(details.year) && !details.condition) missingCore.push('brand new status');
-
-  if (missingCore.length === 0) {
-    return `${quoteCount} quotes unlocked`;
-  }
-
-  if (missingCore.length === 1) {
-    return `Need ${missingCore[0]} to unlock quotes`;
-  }
-
-  return `Need ${missingCore.slice(0, -1).join(', ')} and ${missingCore[missingCore.length - 1]}`;
 }
 
 function renderAssistantMessage(text: string) {
@@ -628,18 +590,14 @@ function getGhostText(query: string, suggestions: { text: string }[]): string | 
 
 export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQueryProp }: { mode?: 'trigger' | 'page'; initialQuery?: string } = {}) {
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const overlayRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const questionRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
-  const detailRailRef = useRef<HTMLDivElement>(null);
-  const detailRailScrollRef = useRef<HTMLDivElement>(null);
-  const chipRefs = useRef<Partial<Record<keyof RequirementDetails, HTMLDivElement | null>>>({});
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
-  const railDragStateRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; dragging: boolean } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
@@ -649,12 +607,16 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [details, setDetails] = useState<RequirementDetails>(emptyDetails);
   const [editMode, setEditMode] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [highlightedFields, setHighlightedFields] = useState<Array<keyof RequirementDetails>>([]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [hasChosenToRefine, setHasChosenToRefine] = useState(false);
   const extractionTimerRef = useRef<number | null>(null);
-  const highlightTimerRef = useRef<number | null>(null);
   const didInitPageMode = useRef(false);
+
+  // Set mobile number when logged in
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    setDetails((prev) => (prev.mobileNumber ? prev : { ...prev, mobileNumber: '+971 50 123 4567' }));
+  }, [isLoggedIn]);
 
   // Auto-expand when rendered as a page
   useEffect(() => {
@@ -710,11 +672,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     ? getGuidancePrompts(details, query, visibleSystemQuestion, shouldAskRefineChoice)
     : [];
   const isQuoteReady = isQuoteUnlockReady(details);
-  const coreStatusText = getCoreStatusText(details, quoteCount);
+  const answeredCount = getCompletedFieldCount(details, isLoggedIn);
+  const totalQuestions = getTotalFieldCount(details);
+  const confidencePct = getConfidenceScore(details, isLoggedIn);
   const canSubmit = Boolean(query.trim() || attachments.length > 0);
-  const visiblePrimaryFields = primaryDetailFields.filter((field) => details[field]);
-  const missingPrimaryFields = primaryDetailFields.filter((field) => !details[field]);
-  const visibleSecondaryFields = ['coverage', 'spec', 'condition', ...secondaryDetailFields].filter((field) => details[field as keyof RequirementDetails]) as Array<keyof RequirementDetails>;
   const hasExtraction = messages.length > 0 || Object.values(details).some(Boolean);
 
   const filteredSuggestions = guidancePrompts.length > 0 ? [] : currentSuggestions;
@@ -740,50 +701,11 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       if (extractionTimerRef.current) {
         window.clearTimeout(extractionTimerRef.current);
       }
-      if (highlightTimerRef.current) {
-        window.clearTimeout(highlightTimerRef.current);
-      }
     };
   }, []);
 
   useEffect(() => {
-    const previousDetails = previousDetailsRef.current;
-    const newlyCapturedFields = (Object.keys(details) as Array<keyof RequirementDetails>).filter(
-      (field) => !previousDetails[field] && Boolean(details[field])
-    );
-
     previousDetailsRef.current = details;
-
-    if (newlyCapturedFields.length === 0) return;
-
-    setHighlightedFields(newlyCapturedFields);
-
-    // Auto-scroll rail to the end to show latest chip
-    requestAnimationFrame(() => {
-      const lastCapturedField = newlyCapturedFields[newlyCapturedFields.length - 1];
-      const chipNode = chipRefs.current[lastCapturedField];
-      if (chipNode) {
-        chipNode.scrollIntoView({
-          behavior: 'smooth',
-          inline: 'end',
-          block: 'nearest',
-        });
-      }
-      // Also scroll the rail container to far right
-      if (detailRailRef.current?.parentElement) {
-        const container = detailRailRef.current.parentElement;
-        container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
-      }
-    });
-
-    if (highlightTimerRef.current) {
-      window.clearTimeout(highlightTimerRef.current);
-    }
-
-    highlightTimerRef.current = window.setTimeout(() => {
-      setHighlightedFields([]);
-      highlightTimerRef.current = null;
-    }, 2000);
   }, [details]);
 
   useEffect(() => {
@@ -818,9 +740,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     const measure = () => {
       const availableHeight = viewportHeight ?? window.visualViewport?.height ?? window.innerHeight;
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
-      const questionHeight = questionRef.current?.offsetHeight ?? 0;
       const inputHeight = inputBarRef.current?.offsetHeight ?? 0;
-      const nextHeight = Math.max(0, Math.floor(availableHeight - headerHeight - questionHeight - inputHeight));
+      const nextHeight = Math.max(0, Math.floor(availableHeight - headerHeight - inputHeight));
       setSuggestionsHeight(nextHeight);
     };
 
@@ -828,7 +749,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
     const resizeObserver = new ResizeObserver(measure);
     if (headerRef.current) resizeObserver.observe(headerRef.current);
-    if (questionRef.current) resizeObserver.observe(questionRef.current);
     if (inputBarRef.current) resizeObserver.observe(inputBarRef.current);
     if (overlayRef.current) resizeObserver.observe(overlayRef.current);
 
@@ -858,16 +778,11 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setDetails(emptyDetails);
     setEditMode(false);
     setIsExtracting(false);
-    setHighlightedFields([]);
     setAttachments([]);
     setHasChosenToRefine(false);
     navigate('/');
     if (extractionTimerRef.current) {
       window.clearTimeout(extractionTimerRef.current);
-      extractionTimerRef.current = null;
-    }
-    if (highlightTimerRef.current) {
-      window.clearTimeout(highlightTimerRef.current);
       highlightTimerRef.current = null;
     }
     previousDetailsRef.current = emptyDetails;
@@ -956,13 +871,13 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       let assistantText = '';
       const shouldShowRefineChoice = isQuoteUnlockReady(nextDetails) && !hadQuoteUnlockReady && !hasChosenToRefine;
       if (hasMulkiya && hasDL) {
-        assistantText = '✅ Got it! Extracted details from your Mulkiya and Driving License.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails));
+        assistantText = '✅ Got it! Extracted details from your Mulkiya and Driving License.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails));
       } else if (hasMulkiya) {
-        assistantText = '✅ Mulkiya scanned! Extracted your car details and registration info.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails));
+        assistantText = '✅ Mulkiya scanned! Extracted your car details and registration info.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails));
       } else if (hasDL) {
-        assistantText = '✅ Driving License scanned! Extracted your DOB and driving experience.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails));
+        assistantText = '✅ Driving License scanned! Extracted your DOB and driving experience.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails));
       } else {
-        assistantText = shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails);
+        assistantText = shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails);
       }
       setMessages((prev) => [
         ...prev,
@@ -985,7 +900,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   };
 
   const handleGuidancePromptClick = (text: string) => {
-    if (text === 'Yes, ask!') {
+    if (text === 'Yes, ask and improve confidence!') {
       setHasChosenToRefine(true);
     }
     handleSubmit(text);
@@ -1069,44 +984,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }
   };
 
-  const handleDetailRailPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const container = detailRailScrollRef.current;
-    if (!container) return;
-
-    railDragStateRef.current = {
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startScrollLeft: container.scrollLeft,
-      dragging: false,
-    };
-
-    container.setPointerCapture?.(e.pointerId);
-  };
-
-  const handleDetailRailPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const container = detailRailScrollRef.current;
-    const dragState = railDragStateRef.current;
-    if (!container || !dragState || dragState.pointerId !== e.pointerId) return;
-
-    const deltaX = e.clientX - dragState.startX;
-    if (Math.abs(deltaX) > 4) {
-      dragState.dragging = true;
-    }
-
-    if (!dragState.dragging) return;
-
-    container.scrollLeft = dragState.startScrollLeft - deltaX;
-  };
-
-  const handleDetailRailPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
-    const container = detailRailScrollRef.current;
-    const dragState = railDragStateRef.current;
-    if (!dragState || dragState.pointerId !== e.pointerId) return;
-
-    container?.releasePointerCapture?.(e.pointerId);
-    railDragStateRef.current = null;
-  };
-
   // Page mode: render the expanded UI as a full-screen page (no overlay, no home behind)
   if (mode === 'page') {
     return (
@@ -1123,79 +1000,36 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
             title="Your requirements"
             subtitle="Tell us about your car in detail"
             onBack={closeExpanded}
+            rightSlot={hasExtraction ? (
+              <motion.div
+                animate={{ scale: [1, 1.12, 1] }}
+                transition={{ duration: 0.3 }}
+                key={answeredCount}
+                className="relative rounded-full p-[2px]"
+                style={{
+                  background: `conic-gradient(#0F1113 ${confidencePct}%, #D6DADE 0%)`,
+                }}
+              >
+                <div className={`flex items-center gap-1.5 rounded-full px-1 py-1 ${isQuoteReady ? 'bg-[#FAFBFC]' : 'bg-[#F3F5F7]'}`}>
+                  <ClipboardList className={`w-3 h-3 ${isQuoteReady ? 'text-[#0F1113]' : 'text-[#5E6670]'}`} />
+                  <span className={`text-[10px] whitespace-nowrap ${isQuoteReady ? 'text-[#0F1113]' : 'text-[#5E6670]'}`}>{answeredCount}/{totalQuestions}</span>
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0F1113]/10"
+                  >
+                    <Pencil className="w-2.5 h-2.5 text-[#0F1113]" />
+                  </button>
+                </div>
+              </motion.div>
+            ) : undefined}
           />
         </div>
-
-        {hasExtraction && (
-        <div ref={questionRef} className="relative z-10 bg-[#F3F5F7] px-5 pt-3 pb-3 shadow-[0_14px_30px_rgba(15,17,19,0.10)] flex-shrink-0">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[16px] leading-5 font-semibold text-[#0F1113]">
-                    {visiblePrimaryFields.length > 0 ? visiblePrimaryFields.map((field) => details[field]).join(' · ') : 'Extracting vehicle details'}
-                  </p>
-                  <p className="text-[11px] text-[#8A919A]">{coreStatusText}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditMode(true)}
-                  className="inline-flex h-7 items-center gap-1 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-2.5 text-[11px] text-[#0F1113]"
-                >
-                  <Pencil className="h-3 w-3" />
-                  Edit
-                </button>
-              </div>
-              {(visibleSecondaryFields.length > 0 || missingPrimaryFields.length > 0) && (
-              <div
-                ref={detailRailScrollRef}
-                onPointerDown={handleDetailRailPointerDown}
-                onPointerMove={handleDetailRailPointerMove}
-                onPointerUp={handleDetailRailPointerEnd}
-                onPointerCancel={handleDetailRailPointerEnd}
-                className="-mx-5 mt-1.5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [touch-action:pan-x] [&::-webkit-scrollbar]:hidden"
-              >
-                <div ref={detailRailRef} className="flex min-w-max gap-1.5 pb-0.5">
-                  {missingPrimaryFields.map((field) => (
-                    <div
-                      key={field}
-                      ref={(node) => {
-                        chipRefs.current[field] = node;
-                      }}
-                      className={`inline-flex items-center gap-1 rounded-full border border-dashed bg-[#FAFBFC] px-2.5 py-1.5 text-[12px] leading-none transition-all duration-500 ${
-                        highlightedFields.includes(field)
-                          ? 'border-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)] text-[#0F1113]'
-                          : 'border-[#B0B6BE] text-[#8A919A]'
-                      }`}
-                    >
-                      <span>{detailLabels[field]}</span>
-                    </div>
-                  ))}
-                  {visibleSecondaryFields.map((field) => (
-                    <div
-                      key={field}
-                      ref={(node) => {
-                        chipRefs.current[field] = node;
-                      }}
-                      className={`inline-flex items-center gap-1 rounded-full bg-[#FFFFFF] px-2.5 py-1.5 text-[12px] leading-none shadow-[0_1px_0_rgba(15,17,19,0.04)] ring-1 transition-all duration-500 ${
-                        highlightedFields.includes(field)
-                          ? 'ring-[#0F1113] shadow-[0_0_0_3px_rgba(15,17,19,0.12)]'
-                          : 'ring-[#D6DADE]'
-                      }`}
-                    >
-                      <span className="text-[#5E6670]">{detailLabels[field]}</span>
-                      <span className="font-medium text-[#0F1113]">{details[field]}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              )}
-              <EditDetailsSheet
-                open={editMode}
-                onOpenChange={setEditMode}
-                details={details}
-                onSave={(updated) => setDetails(updated)}
-              />
-        </div>
-        )}
+        <EditDetailsSheet
+          open={editMode}
+          onOpenChange={setEditMode}
+          details={details}
+          onSave={(updated) => setDetails(updated)}
+        />
 
         {/* Conversation + details */}
         <div
@@ -1234,16 +1068,21 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               </div>
             )}
             {hasExtraction && isQuoteReady && (
-              <div className="pt-0.5 flex items-center gap-2">
+              <div className="pt-0.5 flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={goToQuotes}
-                  className="h-9 rounded-full bg-[#0F1113] px-4 text-sm"
+                  className="h-9 rounded-full bg-[#0F1113] px-4 text-sm flex-shrink-0"
                 >
                   <span className="shimmer-text">
                     {`Show ${quoteCount} Quotes`}
                   </span>
                 </button>
+                {confidencePct < 100 && (
+                  <span className="text-[11px] leading-tight text-[#8A919A]">
+                    ⚠️ {confidencePct}% confidence
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -1269,7 +1108,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   >
                     <div className="flex min-w-0 items-start gap-2.5">
                       <ClipboardList className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#B0B6BE]" />
-                      <span className="min-w-0 whitespace-normal break-words font-medium leading-5">
+                      <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] font-medium leading-5">
                         {`No, let's see ${quoteCount} quotes`}
                       </span>
                     </div>
@@ -1286,7 +1125,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                     }`}
                   >
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
-                    <span className="min-w-0 whitespace-normal break-words leading-5">{prompt.text}</span>
+                    <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] leading-5">{prompt.text}</span>
                   </button>
                 ))}
                 {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
@@ -1299,7 +1138,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                     }`}
                   >
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
-                    <span className="min-w-0 whitespace-normal break-words leading-5">{suggestion.text}</span>
+                    <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] leading-5">{suggestion.text}</span>
                   </button>
                 ))}
               </div>

@@ -539,6 +539,14 @@ function getGuidancePrompts(
     prompts.push({ key: 'nationality', text: 'I am Indian' });
     prompts.push({ key: 'nationality', text: 'I am Pakistani' });
     prompts.push({ key: 'nationality', text: 'I am Filipino' });
+    prompts.push({ key: 'nationality', text: 'I am Bangladeshi' });
+    prompts.push({ key: 'nationality', text: 'I am Sri Lankan' });
+    prompts.push({ key: 'nationality', text: 'I am Emirati' });
+    prompts.push({ key: 'nationality', text: 'I am Egyptian' });
+    prompts.push({ key: 'nationality', text: 'I am Jordanian' });
+    prompts.push({ key: 'nationality', text: 'I am Lebanese' });
+    prompts.push({ key: 'nationality', text: 'I am British' });
+    prompts.push({ key: 'nationality', text: 'I am American' });
     return prompts;
   }
 
@@ -552,6 +560,10 @@ function getGuidancePrompts(
   if (questionCategory === 'accidentFreeMonths' && !details.accidentFreeMonths) {
     prompts.push({ key: 'accidentFreeMonths', text: 'Never claimed' });
     prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 3+ years' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 2-3 years' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 1-2 years' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 6-12 months' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'Less than 6 months claim-free' });
     return prompts;
   }
 
@@ -723,6 +735,35 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
   const filteredSuggestions = guidancePrompts.length > 0 ? [] : currentSuggestions;
 
+  const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const typewriterFill = (text: string, callback?: () => void) => {
+    if (typewriterRef.current) clearTimeout(typewriterRef.current);
+    // Find common prefix to only animate the new portion
+    const current = query;
+    let prefixLen = 0;
+    while (prefixLen < current.length && prefixLen < text.length && current[prefixLen] === text[prefixLen]) {
+      prefixLen++;
+    }
+    let i = prefixLen;
+    setQuery(text.slice(0, i));
+    const step = () => {
+      i++;
+      setQuery(text.slice(0, i));
+      if (i < text.length) {
+        typewriterRef.current = setTimeout(step, 18);
+      } else {
+        typewriterRef.current = null;
+        callback?.();
+      }
+    };
+    if (i < text.length) {
+      typewriterRef.current = setTimeout(step, 18);
+    } else {
+      callback?.();
+    }
+  };
+
   const focusInput = () => {
     requestAnimationFrame(() => {
       const input = inputRef.current;
@@ -737,12 +778,15 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     if (expanded) {
       focusInput();
     }
-  }, [expanded, phase]);
+  }, [expanded]);
 
   useEffect(() => {
     return () => {
       if (extractionTimerRef.current) {
         window.clearTimeout(extractionTimerRef.current);
+      }
+      if (typewriterRef.current) {
+        clearTimeout(typewriterRef.current);
       }
     };
   }, []);
@@ -841,26 +885,26 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
     if (suggestion.phase === 'brand') {
       setPhase('model');
-      setQuery(nextText + ' ');
+      typewriterFill(nextText + ' ');
     } else if (suggestion.phase === 'model') {
       setPhase('year');
-      setQuery(nextText + ', ');
+      typewriterFill(nextText + ', ');
     } else if (suggestion.phase === 'year') {
       const parsed = parseVehicleInput(nextText);
       if (parsed?.year && shouldRequireCondition(parsed.year)) {
         setPhase('condition');
-        setQuery(nextText + ', ');
+        typewriterFill(nextText + ', ');
       } else {
-        setQuery(nextText);
+        typewriterFill(nextText);
         setPhase('done');
         return;
       }
     } else if (suggestion.phase === 'condition') {
-      setQuery(nextText);
+      typewriterFill(nextText);
       setPhase('done');
       return;
     } else {
-      setQuery(nextText + ' ');
+      typewriterFill(nextText + ' ');
       setPhase(phase);
       return;
     }
@@ -943,7 +987,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   };
 
   const handleGuidancePromptClick = (text: string) => {
-    setQuery(text);
+    typewriterFill(text);
   };
 
   const goToQuotes = () => {
@@ -1130,11 +1174,11 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         </div>
 
         {/* Bottom input */}
-        <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
+        <div ref={inputBarRef} className="bg-[#F3F5F7] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
           <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
             Type naturally and we will capture important details.
           </p>
-          {(filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
+          {!isExtracting && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
             <div className="mb-1.5 -mx-5 px-5 flex gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {guidancePrompts.map((prompt) => (
                 <button

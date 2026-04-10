@@ -188,7 +188,7 @@
 
   /* Scale everything up on larger phones (>400px CSS width) */
   @media (min-width: 400px) and (max-width: 768px) {
-    html {
+    #root {
       zoom: 1.08;
     }
   }

@@ -879,7 +879,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     // Follow-up questions: just fill the short answer, don't rebuild the full sentence
     if (messages.length > 0) {
       const shortText = suggestion.label.replace(/^\.\.\./, '').trim();
-      typewriterFill(shortText);
+      const current = query.trim();
+      typewriterFill(current ? `${current}, ${shortText}` : shortText);
       setPhase('done');
       return;
     }

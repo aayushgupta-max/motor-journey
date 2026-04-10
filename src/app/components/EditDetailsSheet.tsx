@@ -452,7 +452,7 @@ export function EditDetailsSheet({
         </div>
 
         {/* Fields */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-2 [-webkit-overflow-scrolling:touch]">
+        <div data-scroll-area className="flex-1 overflow-y-auto overscroll-contain px-5 pb-2 [-webkit-overflow-scrolling:touch]">
           {editTab === 'car' ? (
             <div className="space-y-2">
               <EditSelectField label="Your car brand" value={draft.brand} options={carBrands.map((b) => b.name)} onChange={(v) => setDraft((prev) => ({ ...prev, brand: v, model: prev.brand !== v ? '' : prev.model }))} />

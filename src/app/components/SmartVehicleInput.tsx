@@ -865,7 +865,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       return;
     }
 
-    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const handleSubmit = (text?: string) => {
@@ -948,7 +947,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       setHasChosenToRefine(true);
     }
     setQuery(text);
-    inputRef.current?.focus();
   };
 
   const goToQuotes = () => {
@@ -1142,15 +1140,15 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
             </p>
           )}
           {(filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
-            <div className="mb-1.5 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mb-1.5 -mx-5 px-5 flex gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {guidancePrompts.map((prompt) => (
                 <button
                   key={`${prompt.key}-${prompt.text}`}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleGuidancePromptClick(prompt.text)}
-                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-[13px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] active:scale-[0.97]"
+                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-sm text-[#4B525A] transition-colors hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-[#B0B6BE]" />
+                  <Sparkles className="h-4 w-4 text-[#B0B6BE]" />
                   <span className="whitespace-nowrap">{prompt.text}</span>
                 </button>
               ))}
@@ -1158,10 +1156,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={goToQuotes}
-                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-[#F3F5F7] px-3 py-1.5 text-[13px] font-medium text-[#0F1113] transition-colors hover:bg-[#E8EAED] active:scale-[0.97]"
+                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-[#F3F5F7] px-3 py-1.5 text-sm font-medium text-[#0F1113] transition-colors hover:bg-[#E8EAED] active:scale-[0.97]"
                 >
                   <span className="whitespace-nowrap">{`See ${quoteCount} quotes`}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-[#5E6670]" />
+                  <ArrowRight className="h-4 w-4 text-[#5E6670]" />
                 </button>
               )}
               {filteredSuggestions.map((suggestion) => (
@@ -1169,9 +1167,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   key={suggestion.text}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-[13px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] active:scale-[0.97]"
+                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-sm text-[#4B525A] transition-colors hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-[#B0B6BE]" />
+                  <Sparkles className="h-4 w-4 text-[#B0B6BE]" />
                   <span className="whitespace-nowrap">{suggestion.label}</span>
                 </button>
               ))}
@@ -1232,8 +1230,11 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={() => {
-                    // On Safari, scroll the input bar into view when keyboard opens
+                    // On Safari, scroll chat to bottom + input into view when keyboard opens
                     setTimeout(() => {
+                      if (suggestionsScrollRef.current) {
+                        suggestionsScrollRef.current.scrollTop = suggestionsScrollRef.current.scrollHeight;
+                      }
                       inputBarRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
                     }, 300);
                   }}

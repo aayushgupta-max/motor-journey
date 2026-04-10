@@ -201,12 +201,19 @@ export function parseVehicleInput(input: string): {
   }
 
   // Extract absolute year if any token is a 4-digit number in range
+  // Also handle "2024 model" — just take the year, ignore "model"
   if (!year) {
-    const tokens = raw.split(/\s+/);
-    for (const token of tokens) {
-      const num = parseInt(token);
-      if (num >= 2007 && num <= currentYear) {
-        year = num;
+    const yearModelMatch = raw.match(/\b(20\d{2})\s*model\b/);
+    if (yearModelMatch) {
+      const num = parseInt(yearModelMatch[1]);
+      if (num >= 2007 && num <= currentYear) year = num;
+    } else {
+      const tokens = raw.split(/\s+/);
+      for (const token of tokens) {
+        const num = parseInt(token);
+        if (num >= 2007 && num <= currentYear) {
+          year = num;
+        }
       }
     }
   }
@@ -216,6 +223,7 @@ export function parseVehicleInput(input: string): {
     .replace(/(\d+)\s*(?:years?|yrs?)\s*(?:old)?/g, '')
     .replace(/\bbrand\s*new\b/g, '')
     .replace(/\bnew\b/g, '')
+    .replace(/\b(20\d{2})\s*model\b/g, '')
     .replace(/\b(20\d{2})\b/g, '')
     .replace(/[.,;:!?]/g, ' ')
     .replace(/\s+/g, ' ')

@@ -137,7 +137,7 @@ function buildInitialProfile(state: unknown, isLoggedIn: boolean): QuoteFlowDeta
   if (navState.year) next.year = String(navState.year);
   if (navState.isBrandNew === true) next.condition = 'Brand new';
   if (navState.isBrandNew === false) next.condition = 'Pre-owned';
-  if (isLoggedIn && !next.mobileNumber) next.mobileNumber = 'Captured';
+  if (isLoggedIn && !next.mobileNumber) next.mobileNumber = '+971 50 123 4567';
 
   return next;
 }
@@ -164,7 +164,7 @@ export default function Quotes() {
   useEffect(() => {
     if (!isLoggedIn) return;
     setProfile((prev) => (prev.mobileNumber ? prev : { ...prev, mobileNumber: '+971 50 123 4567' }));
-  }, [isLoggedIn]);
+  }, [isLoggedIn]); // handles login during session
 
   const toggleFilter = (f: string) => {
     setActiveFilters((prev) =>

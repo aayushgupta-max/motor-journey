@@ -705,7 +705,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const normalizedQuery = normalizeVehicleQuery(query);
   const draftDetails = mergeDetails(details, parseDetailsFromText(query, visibleSystemQuestion));
   const hasSystemQuestion = Boolean(visibleSystemQuestion);
-  const currentSuggestions = hasSystemQuestion
+  const currentSuggestions = hasSystemQuestion && !shouldAskRefineChoice
     ? generateSuggestions(query, phase, draftDetails, visibleSystemQuestion)
     : [];
   const ghost = normalizedQuery === query.toLowerCase().trim()
@@ -943,9 +943,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   };
 
   const handleGuidancePromptClick = (text: string) => {
-    if (text === 'Yes, ask and improve confidence!') {
-      setHasChosenToRefine(true);
-    }
     setQuery(text);
   };
 
@@ -1134,11 +1131,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
         {/* Bottom input */}
         <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
-          {messages.length === 0 && (
-            <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
-              Type naturally and we will capture important details.
-            </p>
-          )}
+          <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
+            Type naturally and we will capture important details.
+          </p>
           {(filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
             <div className="mb-1.5 -mx-5 px-5 flex gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {guidancePrompts.map((prompt) => (
@@ -1151,7 +1146,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   <span className="whitespace-nowrap">{prompt.text}</span>
                 </button>
               ))}
-              {shouldAskRefineChoice && (
+              {shouldAskRefineChoice && !isExtracting && (
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={goToQuotes}

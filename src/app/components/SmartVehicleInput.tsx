@@ -538,7 +538,7 @@ function getNextQuestion(details: RequirementDetails, quoteCount?: number): stri
 }
 
 function getPostUnlockQuestion(quoteCount: number, confidencePct: number): string {
-  return `🎉 ${quoteCount} quotes unlocked!\n⚠️ ${confidencePct}% confidence — add more details to improve pricing accuracy.`;
+  return `⚠️ Low Confidence\n${quoteCount} Quotes Unlocked! Add more details to improve premium confidence.`;
 }
 
 function getEstimatedQuoteCount(details: RequirementDetails): number {
@@ -564,7 +564,7 @@ function renderAssistantMessage(text: string) {
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <p className="text-[14px] leading-5">{intro}</p>
       <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">{emphasis}</p>
       {rest.map((line, index) => (

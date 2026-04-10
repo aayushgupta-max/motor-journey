@@ -1073,7 +1073,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     return (
       <div
         ref={overlayRef}
-        className="flex flex-col bg-white overscroll-none [touch-action:manipulation]"
+        className="flex w-full flex-col bg-white overscroll-none"
         style={{
           height: viewportHeight ? `${viewportHeight}px` : '100dvh',
         }}
@@ -1174,16 +1174,17 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         </div>
 
         {/* Bottom input */}
-        <div ref={inputBarRef} className="bg-[#F3F5F7] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
+        <div ref={inputBarRef} className="bg-[#F3F5F7] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
           <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
             Type naturally and we will capture important details.
           </p>
-          {!isExtracting && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
-            <div className="mb-1.5 -mx-5 px-5 flex gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [touch-action:pan-x] [-webkit-overflow-scrolling:touch]">
+          {!isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
+            <div data-chips-scroll className="mb-1.5 -mx-5 overflow-x-auto px-5 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [animation:chipsFadeIn_0.3s_ease-out]">
+              <div className="w-max space-y-2">
+                <div className="flex w-max gap-2">
               {guidancePrompts.map((prompt) => (
                 <button
                   key={`${prompt.key}-${prompt.text}`}
-                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleGuidancePromptClick(prompt.text)}
                   className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
@@ -1192,7 +1193,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               ))}
               {shouldAskRefineChoice && !isExtracting && (
                 <button
-                  onMouseDown={(e) => e.preventDefault()}
                   onClick={goToQuotes}
                   className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[999px] bg-[#F3F5F7] px-2.5 py-1.5 text-[13px] font-medium text-[#0F1113] transition-all hover:bg-[#E8EAED] active:scale-[0.97]"
                 >
@@ -1203,13 +1203,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               {filteredSuggestions.map((suggestion) => (
                 <button
                   key={suggestion.text}
-                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
                   <span className="whitespace-nowrap">{suggestion.label}</span>
                 </button>
               ))}
+                </div>
+              </div>
             </div>
           )}
           {attachments.length > 0 && (
@@ -1233,7 +1234,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               ))}
             </div>
           )}
-          <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)]">
+          <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)] [touch-action:manipulation]">
             <div className="flex items-center gap-2.5">
               <button
                 type="button"

@@ -1067,7 +1067,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <span>Extracting details...</span>
               </div>
             )}
-            {hasExtraction && isQuoteReady && (
+            {hasExtraction && isQuoteReady && !isExtracting && (
               <div className="pt-0.5 flex items-center gap-2.5">
                 <button
                   type="button"

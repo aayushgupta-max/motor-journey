@@ -186,6 +186,13 @@
     font-size: var(--font-size);
   }
 
+  /* Scale everything up on larger phones (>400px CSS width) */
+  @media (min-width: 400px) and (max-width: 768px) {
+    html {
+      zoom: 1.08;
+    }
+  }
+
   h1 {
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);

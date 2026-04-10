@@ -863,6 +863,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setQuery('');
     setAttachments([]);
     setIsExtracting(true);
+    inputRef.current?.blur();
 
     if (extractionTimerRef.current) {
       window.clearTimeout(extractionTimerRef.current);
@@ -1115,26 +1116,26 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                     <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#0F1113]" />
                   </button>
                 ) : null}
-                {guidancePrompts.slice(0, 3).map((prompt, index) => (
+                {guidancePrompts.slice(0, Math.min(3, 4 - (shouldAskRefineChoice ? 1 : 0))).map((prompt, index, arr) => (
                   <button
                     key={`${prompt.key}-${prompt.text}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleGuidancePromptClick(prompt.text)}
                     className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
-                      index !== guidancePrompts.slice(0, 3).length - 1 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
+                      index !== arr.length - 1 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
                     }`}
                   >
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
                     <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] leading-5">{prompt.text}</span>
                   </button>
                 ))}
-                {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+                {filteredSuggestions.slice(0, Math.max(0, 4 - (shouldAskRefineChoice ? 1 : 0) - guidancePrompts.slice(0, 3).length)).map((suggestion, index, arr) => (
                   <button
                     key={suggestion.text}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
-                      index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-[#D6DADE]' : ''
+                      index !== arr.length - 1 ? 'border-b border-[#D6DADE]' : ''
                     }`}
                   >
                     <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />

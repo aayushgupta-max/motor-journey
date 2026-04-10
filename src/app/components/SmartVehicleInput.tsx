@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import TextareaAutosize from 'react-textarea-autosize';
-import { SendHorizonal, Sparkles, Pencil, Check, Plus, X } from 'lucide-react';
+import { SendHorizonal, Sparkles, Pencil, Check, Plus, X, ArrowRight, ClipboardList } from 'lucide-react';
 import { PageHeaderBar } from './PageHeaderBar';
 import { EditDetailsSheet } from './EditDetailsSheet';
 import {
@@ -134,38 +134,42 @@ function getNextMissingCategory(details: RequirementDetails): SuggestionCategory
   return null;
 }
 
-function detectSuggestionCategory(
-  inputText: string,
-  details: RequirementDetails,
-  phase: SuggestionPhase,
-  activeQuestion?: string
+function getQuestionCategory(
+  activeQuestion: string | undefined,
+  details: RequirementDetails
 ): SuggestionCategory | null {
-  const fragment = normalizeVehicleQuery(getCurrentFragment(inputText));
   const normalizedQuestion = normalizeVehicleQuery(activeQuestion ?? '');
 
-  if (!fragment && normalizedQuestion) {
-    if (normalizedQuestion.includes('third party') || normalizedQuestion.includes('comprehensive')) return 'coverage';
-    if (normalizedQuestion.includes('gcc')) return 'spec';
-    if (normalizedQuestion.includes('brand new') || normalizedQuestion.includes('pre-owned')) return 'condition';
-    if (normalizedQuestion.includes('which year')) return 'year';
-    if (normalizedQuestion.includes('which make')) return 'brand';
-    if (normalizedQuestion.includes('which') && normalizedQuestion.includes('model')) return 'model';
-  }
-
-  if (!fragment) {
-    return getNextMissingCategory(details);
-  }
-
-  if (/\b(third party|third-party|comprehensive|cover|insurance)\b/.test(fragment)) return 'coverage';
-  if (/\b(gcc|non-gcc|imported|american|european|japanese|spec)\b/.test(fragment)) return 'spec';
-  if (/\b(brand new|pre-owned|pre owned|used|new)\b/.test(fragment)) return 'condition';
-
-  if (!details.brand || phase === 'brand') return 'brand';
-  if (details.brand && !details.model) return 'model';
-  if (details.brand && details.model && !details.year) return 'year';
-  if (details.year && !details.condition && shouldRequireCondition(details.year)) return 'condition';
-
+  if (!normalizedQuestion) return null;
+  if (normalizedQuestion.includes('third party') || normalizedQuestion.includes('comprehensive')) return 'coverage';
+  if (normalizedQuestion.includes('gcc')) return 'spec';
+  if (normalizedQuestion.includes('brand new') || normalizedQuestion.includes('pre-owned')) return 'condition';
+  if (normalizedQuestion.includes('which year')) return 'year';
+  if (normalizedQuestion.includes('which make')) return 'brand';
+  if (normalizedQuestion.includes('which') && normalizedQuestion.includes('model')) return 'model';
+  if (normalizedQuestion.includes('registered in')) return 'city';
+  if (normalizedQuestion.includes('nationality')) return 'nationality';
+  if (normalizedQuestion.includes('driving experience')) return 'drivingExperience';
+  if (normalizedQuestion.includes('last accident') || normalizedQuestion.includes('last accident or claim')) return 'accidentFreeMonths';
+  if (normalizedQuestion.includes('date of birth')) return 'dob';
+  if (normalizedQuestion.includes('full name')) return 'name';
   return getNextMissingCategory(details);
+}
+
+function isCategorySatisfied(
+  category: SuggestionCategory,
+  details: RequirementDetails
+): boolean {
+  if (category === 'condition') return Boolean(details.condition);
+  if (category === 'coverage') return Boolean(details.coverage);
+  if (category === 'spec') return Boolean(details.spec);
+  if (category === 'city') return Boolean(details.city);
+  if (category === 'nationality') return Boolean(details.nationality);
+  if (category === 'drivingExperience') return Boolean(details.drivingExperience);
+  if (category === 'accidentFreeMonths') return Boolean(details.accidentFreeMonths);
+  if (category === 'dob') return Boolean(details.dob);
+  if (category === 'name') return Boolean(details.name);
+  return Boolean(details[category]);
 }
 
 function getSentenceTemplates(
@@ -187,13 +191,11 @@ function getSentenceTemplates(
 
   if (category === 'model' && details.brand) {
     const modelFragment = getUnmatchedModelFragment(remainder || fragment, details.brand).toLowerCase();
-    const currentYear = new Date().getFullYear();
     const models = [...(modelsByBrand[details.brand] ?? [])]
       .filter((model) => !modelFragment || model.toLowerCase().startsWith(modelFragment))
       .reverse()
-      .slice(0, 6);
-    // Suggest model + current year together so user can pick in one tap
-    return models.map((model) => `${prefix}${details.brand} ${model}, ${currentYear} model`);
+      .slice(0, 5);
+    return models.map((model) => `${prefix}${details.brand} ${model}`);
   }
 
   if (category === 'year' && details.brand && details.model) {
@@ -201,7 +203,7 @@ function getSentenceTemplates(
     return [...getYearRange()]
       .reverse()
       .filter((year) => !yearFragment || String(year).startsWith(yearFragment))
-      .slice(0, 6)
+      .slice(0, 5)
       .map((year) => `${prefix}${details.brand} ${details.model}, ${year} model`);
   }
 
@@ -220,6 +222,18 @@ function getSentenceTemplates(
 
   if (category === 'city') {
     return ['My car is registered in Dubai.', 'My car is registered in Abu Dhabi.', 'My car is registered in Sharjah.'];
+  }
+
+  if (category === 'nationality') {
+    return ['I am Indian.', 'I am Pakistani.', 'I am Filipino.', 'I am Emirati.', 'I am British.'];
+  }
+
+  if (category === 'drivingExperience') {
+    return ['I have 3-5 years driving experience.', 'I have 5-8 years driving experience.', 'I have 10+ years driving experience.'];
+  }
+
+  if (category === 'accidentFreeMonths') {
+    return ['I have never claimed.', 'No accident in 3+ years.', 'No accident in 1-2 years.'];
   }
 
   if (category === 'expiry') {
@@ -261,7 +275,13 @@ function generateSuggestions(
   details: RequirementDetails,
   activeQuestion?: string
 ): { text: string; phase: SuggestionPhase }[] {
-  const category = detectSuggestionCategory(inputText, details, phase, activeQuestion);
+  const askedCategory = getQuestionCategory(activeQuestion, details);
+  if (!askedCategory) return [];
+
+  const category = isCategorySatisfied(askedCategory, details)
+    ? getNextMissingCategory(details)
+    : askedCategory;
+
   if (!category) return [];
 
   const nextPhase: SuggestionPhase =
@@ -275,11 +295,68 @@ function generateSuggestions(
     .map((text) => ({ text, phase: nextPhase }));
 }
 
-function parseDetailsFromText(inputText: string): Partial<RequirementDetails> {
+function extractDob(inputText: string, allowBareDate = false): string | null {
+  const dobPatterns: RegExp[] = [
+    /(?:born\s+(?:on\s+)?|dob[:\-\s]*|date of birth[:\-\s]*)(\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[,\s]+\d{4})/i,
+    /(?:born\s+(?:on\s+)?|dob[:\-\s]*|date of birth[:\-\s]*)((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?[,]?\s+\d{4})/i,
+    /(?:born\s+(?:on\s+)?|dob[:\-\s]*|date of birth[:\-\s]*)(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i,
+    /(?:born\s+(?:on\s+)?|dob[:\-\s]*|date of birth[:\-\s]*)(\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2})/i,
+    /(?:born\s+(?:on\s+)?|dob[:\-\s]*|date of birth[:\-\s]*)(\d{8})\b/i,
+  ];
+
+  const bareDatePatterns: RegExp[] = [
+    /\b(\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[,\s]+\d{4})\b/i,
+    /\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?[,]?\s+\d{4})\b/i,
+    /\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})\b/i,
+    /\b(\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2})\b/i,
+    /\b(\d{8})\b/i,
+  ];
+
+  const match = [...dobPatterns, ...(allowBareDate ? bareDatePatterns : [])]
+    .map((pattern) => inputText.match(pattern))
+    .find(Boolean);
+
+  if (!match?.[1]) return null;
+
+  return match[1]
+    .replace(/\s+/g, ' ')
+    .replace(/,\s*/g, ' ')
+    .trim();
+}
+
+function extractName(inputText: string, allowBareName = false): string | null {
+  const explicitMatch = inputText.match(/(?:(?:my name is|i'?m|name[:\-]?\s*|owner name is)\s+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})/i);
+  if (explicitMatch?.[1]) {
+    return explicitMatch[1].trim();
+  }
+
+  if (!allowBareName) return null;
+
+  const cleaned = inputText
+    .replace(/[.,/#!$%^&*;:{}=_`~()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return null;
+
+  const parts = cleaned.split(' ');
+  const isLikelyName =
+    parts.length >= 2 &&
+    parts.length <= 4 &&
+    parts.every((part) => /^[A-Za-z][A-Za-z'-]*$/.test(part));
+
+  return isLikelyName ? cleaned : null;
+}
+
+function parseDetailsFromText(
+  inputText: string,
+  activeQuestion?: string
+): Partial<RequirementDetails> {
   const normalized = normalizeVehicleQuery(inputText);
   const parsedVehicle = parseVehicleInput(normalized);
   const lower = inputText.toLowerCase();
   const next: Partial<RequirementDetails> = {};
+  const activeQuestionCategory = getQuestionCategory(activeQuestion, emptyDetails);
 
   if (parsedVehicle?.brand) next.brand = parsedVehicle.brand;
   if (parsedVehicle?.model) next.model = parsedVehicle.model;
@@ -331,13 +408,11 @@ function parseDetailsFromText(inputText: string): Partial<RequirementDetails> {
   const foundNationality = nationalities.find((n) => lower.includes(n.toLowerCase()));
   if (foundNationality) next.nationality = foundNationality;
 
-  // Name: "my name is X" or "I'm X" or "name: X"
-  const nameMatch = inputText.match(/(?:(?:my name is|i'?m|name[:\-]?\s*)\s+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})/i);
-  if (nameMatch?.[1]) next.name = nameMatch[1].trim();
+  const name = extractName(inputText, activeQuestionCategory === 'name');
+  if (name) next.name = name;
 
-  // DOB: "born on X" or "dob: X" or date patterns
-  const dobMatch = inputText.match(/(?:born\s+(?:on\s+)?|dob[:\-]?\s*|date of birth[:\-]?\s*)(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
-  if (dobMatch?.[1]) next.dob = dobMatch[1].trim();
+  const dob = extractDob(inputText, activeQuestionCategory === 'dob');
+  if (dob) next.dob = dob;
 
   // Driving experience: "X years driving" or "driving for X years"
   const expMatch = inputText.match(/(?:driving\s+(?:for\s+)?|experience[:\-]?\s*)(\d+)\s*(?:\+\s*)?years?/i)
@@ -391,45 +466,66 @@ function hasVehicleCore(details: RequirementDetails): boolean {
   return Boolean(details.brand && details.model && details.year);
 }
 
-function getGuidancePrompts(details: RequirementDetails, inputText: string): Array<{ key: keyof RequirementDetails; text: string }> {
+function getGuidancePrompts(
+  details: RequirementDetails,
+  inputText: string,
+  activeQuestion?: string,
+  shouldAskRefineChoice = false
+): Array<{ key: keyof RequirementDetails; text: string }> {
   if (!hasVehicleCore(details)) return [];
+  if (!activeQuestion) return [];
   if (!hasCompletedSentence(inputText) && inputText.trim().length > 0) return [];
 
   const prompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
+  if (shouldAskRefineChoice) {
+    prompts.push({ key: 'coverage', text: 'Yes, ask!' });
+    return prompts;
+  }
 
-  if (!details.condition && shouldRequireCondition(details.year)) {
+  const questionCategory = getQuestionCategory(activeQuestion, details);
+
+  if (!questionCategory) return prompts;
+
+  if (questionCategory === 'condition' && !details.condition && shouldRequireCondition(details.year)) {
     prompts.push({ key: 'condition', text: 'It\'s brand new' });
     prompts.push({ key: 'condition', text: 'It\'s pre-owned' });
     return prompts;
   }
 
-  if (!details.coverage) {
+  if (questionCategory === 'coverage' && !details.coverage) {
     prompts.push({ key: 'coverage', text: 'It was comprehensive' });
     prompts.push({ key: 'coverage', text: 'It was third party' });
     return prompts;
   }
 
-  if (!details.spec) {
+  if (questionCategory === 'spec' && !details.spec) {
     prompts.push({ key: 'spec', text: 'It\'s GCC spec' });
     prompts.push({ key: 'spec', text: 'It\'s non-GCC' });
     return prompts;
   }
 
-  if (!details.city) {
+  if (questionCategory === 'city' && !details.city) {
     prompts.push({ key: 'city', text: 'Registered in Dubai' });
     prompts.push({ key: 'city', text: 'Registered in Abu Dhabi' });
     prompts.push({ key: 'city', text: 'Registered in Sharjah' });
     return prompts;
   }
 
-  if (!details.drivingExperience) {
+  if (questionCategory === 'nationality' && !details.nationality) {
+    prompts.push({ key: 'nationality', text: 'I am Indian' });
+    prompts.push({ key: 'nationality', text: 'I am Pakistani' });
+    prompts.push({ key: 'nationality', text: 'I am Filipino' });
+    return prompts;
+  }
+
+  if (questionCategory === 'drivingExperience' && !details.drivingExperience) {
     prompts.push({ key: 'drivingExperience', text: '3-5 years driving' });
     prompts.push({ key: 'drivingExperience', text: '5-8 years driving' });
     prompts.push({ key: 'drivingExperience', text: '10+ years driving' });
     return prompts;
   }
 
-  if (!details.accidentFreeMonths) {
+  if (questionCategory === 'accidentFreeMonths' && !details.accidentFreeMonths) {
     prompts.push({ key: 'accidentFreeMonths', text: 'Never claimed' });
     prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 3+ years' });
     return prompts;
@@ -458,6 +554,10 @@ function getNextQuestion(details: RequirementDetails, quoteCount?: number): stri
     return `${count} quotes ready for you!\nAdd more details to refine, or go ahead and check them out.`;
   }
   return 'Anything else you\'d like us to consider?';
+}
+
+function getPostUnlockQuestion(quoteCount: number): string {
+  return `🎉 ${quoteCount} quotes unlocked!\nWould you like to refine your requirement for more accurate quotes, or see the quotes now?`;
 }
 
 function getEstimatedQuoteCount(details: RequirementDetails): number {
@@ -536,8 +636,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const fileInputRef = useRef<HTMLInputElement>(null);
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const detailRailRef = useRef<HTMLDivElement>(null);
+  const detailRailScrollRef = useRef<HTMLDivElement>(null);
   const chipRefs = useRef<Partial<Record<keyof RequirementDetails, HTMLDivElement | null>>>({});
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
+  const railDragStateRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; dragging: boolean } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
@@ -549,6 +651,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [isExtracting, setIsExtracting] = useState(false);
   const [highlightedFields, setHighlightedFields] = useState<Array<keyof RequirementDetails>>([]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [hasChosenToRefine, setHasChosenToRefine] = useState(false);
   const extractionTimerRef = useRef<number | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
   const didInitPageMode = useRef(false);
@@ -589,16 +692,24 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     return () => clearTimeout(timer);
   }, [mode]);
 
+  const latestAssistantQuestion = [...messages].reverse().find((message) => message.role === 'assistant')?.text;
+  const quoteCount = getEstimatedQuoteCount(details);
+  const shouldAskRefineChoice = isQuoteUnlockReady(details) && !hasChosenToRefine;
+  const initialSystemQuestion = messages.length === 0 ? getNextQuestion(details, quoteCount) : undefined;
+  const visibleSystemQuestion = latestAssistantQuestion ?? initialSystemQuestion;
   const normalizedQuery = normalizeVehicleQuery(query);
-  const draftDetails = mergeDetails(details, parseDetailsFromText(query));
-  const activeAssistantQuestion = [...messages].reverse().find((message) => message.role === 'assistant')?.text;
-  const currentSuggestions = generateSuggestions(query, phase, draftDetails, activeAssistantQuestion);
+  const draftDetails = mergeDetails(details, parseDetailsFromText(query, visibleSystemQuestion));
+  const hasSystemQuestion = Boolean(visibleSystemQuestion);
+  const currentSuggestions = hasSystemQuestion
+    ? generateSuggestions(query, phase, draftDetails, visibleSystemQuestion)
+    : [];
   const ghost = normalizedQuery === query.toLowerCase().trim()
     ? getGhostText(query, currentSuggestions)
     : null;
-  const guidancePrompts = phase === 'done' ? getGuidancePrompts(details, query) : [];
+  const guidancePrompts = hasSystemQuestion && phase === 'done'
+    ? getGuidancePrompts(details, query, visibleSystemQuestion, shouldAskRefineChoice)
+    : [];
   const isQuoteReady = isQuoteUnlockReady(details);
-  const quoteCount = getEstimatedQuoteCount(details);
   const coreStatusText = getCoreStatusText(details, quoteCount);
   const canSubmit = Boolean(query.trim() || attachments.length > 0);
   const visiblePrimaryFields = primaryDetailFields.filter((field) => details[field]);
@@ -749,6 +860,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setIsExtracting(false);
     setHighlightedFields([]);
     setAttachments([]);
+    setHasChosenToRefine(false);
     navigate('/');
     if (extractionTimerRef.current) {
       window.clearTimeout(extractionTimerRef.current);
@@ -802,8 +914,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     const input = text || query;
     if (!input.trim() && attachments.length === 0) return;
 
-    const extracted = parseDetailsFromText(input);
+    const extracted = parseDetailsFromText(input, visibleSystemQuestion);
     let nextDetails = mergeDetails(details, extracted);
+    const hadQuoteUnlockReady = isQuoteUnlockReady(details);
 
     // Auto-extract from uploaded mulkiya / DL attachments
     const currentAttachments = [...attachments];
@@ -829,6 +942,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       },
     ]);
     setDetails(nextDetails);
+    if (hadQuoteUnlockReady && !hasChosenToRefine) {
+      setHasChosenToRefine(true);
+    }
     setQuery('');
     setAttachments([]);
     setIsExtracting(true);
@@ -838,14 +954,15 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }
     extractionTimerRef.current = window.setTimeout(() => {
       let assistantText = '';
+      const shouldShowRefineChoice = isQuoteUnlockReady(nextDetails) && !hadQuoteUnlockReady && !hasChosenToRefine;
       if (hasMulkiya && hasDL) {
-        assistantText = '✅ Got it! Extracted details from your Mulkiya and Driving License.\n' + getNextQuestion(nextDetails);
+        assistantText = '✅ Got it! Extracted details from your Mulkiya and Driving License.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails));
       } else if (hasMulkiya) {
-        assistantText = '✅ Mulkiya scanned! Extracted your car details and registration info.\n' + getNextQuestion(nextDetails);
+        assistantText = '✅ Mulkiya scanned! Extracted your car details and registration info.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails));
       } else if (hasDL) {
-        assistantText = '✅ Driving License scanned! Extracted your DOB and driving experience.\n' + getNextQuestion(nextDetails);
+        assistantText = '✅ Driving License scanned! Extracted your DOB and driving experience.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails));
       } else {
-        assistantText = getNextQuestion(nextDetails);
+        assistantText = shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails)) : getNextQuestion(nextDetails);
       }
       setMessages((prev) => [
         ...prev,
@@ -868,6 +985,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   };
 
   const handleGuidancePromptClick = (text: string) => {
+    if (text === 'Yes, ask!') {
+      setHasChosenToRefine(true);
+    }
     handleSubmit(text);
   };
 
@@ -949,6 +1069,44 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }
   };
 
+  const handleDetailRailPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const container = detailRailScrollRef.current;
+    if (!container) return;
+
+    railDragStateRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startScrollLeft: container.scrollLeft,
+      dragging: false,
+    };
+
+    container.setPointerCapture?.(e.pointerId);
+  };
+
+  const handleDetailRailPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const container = detailRailScrollRef.current;
+    const dragState = railDragStateRef.current;
+    if (!container || !dragState || dragState.pointerId !== e.pointerId) return;
+
+    const deltaX = e.clientX - dragState.startX;
+    if (Math.abs(deltaX) > 4) {
+      dragState.dragging = true;
+    }
+
+    if (!dragState.dragging) return;
+
+    container.scrollLeft = dragState.startScrollLeft - deltaX;
+  };
+
+  const handleDetailRailPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const container = detailRailScrollRef.current;
+    const dragState = railDragStateRef.current;
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+
+    container?.releasePointerCapture?.(e.pointerId);
+    railDragStateRef.current = null;
+  };
+
   // Page mode: render the expanded UI as a full-screen page (no overlay, no home behind)
   if (mode === 'page') {
     return (
@@ -987,7 +1145,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 </button>
               </div>
               {(visibleSecondaryFields.length > 0 || missingPrimaryFields.length > 0) && (
-              <div className="-mx-5 mt-1.5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div
+                ref={detailRailScrollRef}
+                onPointerDown={handleDetailRailPointerDown}
+                onPointerMove={handleDetailRailPointerMove}
+                onPointerUp={handleDetailRailPointerEnd}
+                onPointerCancel={handleDetailRailPointerEnd}
+                className="-mx-5 mt-1.5 overflow-x-auto px-5 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [touch-action:pan-x] [&::-webkit-scrollbar]:hidden"
+              >
                 <div ref={detailRailRef} className="flex min-w-max gap-1.5 pb-0.5">
                   {missingPrimaryFields.map((field) => (
                     <div
@@ -1075,7 +1240,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   onClick={goToQuotes}
                   className="h-9 rounded-full bg-[#0F1113] px-4 text-sm"
                 >
-                  <span className="shimmer-text">{`See ${quoteCount} Quotes`}</span>
+                  <span className="shimmer-text">
+                    {`Show ${quoteCount} Quotes`}
+                  </span>
                 </button>
               </div>
             )}
@@ -1089,9 +1256,26 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               Type naturally and we will capture important details.
             </p>
           )}
-          {(filteredSuggestions.length > 0 || guidancePrompts.length > 0) && (
+          {(filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
             <div className="mb-[8px] rounded-[18px] border-[0.5px] border-[#E8EAED] bg-[#F3F5F7] p-[1px]">
               <div className="overflow-hidden rounded-[16px] bg-[#FFFFFF]">
+                {shouldAskRefineChoice ? (
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={goToQuotes}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[14px] text-[#0F1113] transition-colors hover:bg-[#FAFBFC] ${
+                      guidancePrompts.length > 0 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <ClipboardList className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#B0B6BE]" />
+                      <span className="min-w-0 whitespace-normal break-words font-medium leading-5">
+                        {`No, let's see ${quoteCount} quotes`}
+                      </span>
+                    </div>
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#0F1113]" />
+                  </button>
+                ) : null}
                 {guidancePrompts.slice(0, 3).map((prompt, index) => (
                   <button
                     key={`${prompt.key}-${prompt.text}`}

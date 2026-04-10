@@ -751,14 +751,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       i++;
       setQuery(text.slice(0, i));
       if (i < text.length) {
-        typewriterRef.current = setTimeout(step, 18);
+        typewriterRef.current = setTimeout(step, 8);
       } else {
         typewriterRef.current = null;
         callback?.();
       }
     };
     if (i < text.length) {
-      typewriterRef.current = setTimeout(step, 18);
+      typewriterRef.current = setTimeout(step, 8);
     } else {
       callback?.();
     }
@@ -875,7 +875,15 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     previousDetailsRef.current = emptyDetails;
   };
 
-  const handleSuggestionClick = (suggestion: { text: string; phase: SuggestionPhase }) => {
+  const handleSuggestionClick = (suggestion: { text: string; label: string; phase: SuggestionPhase }) => {
+    // Follow-up questions: just fill the short answer, don't rebuild the full sentence
+    if (messages.length > 0) {
+      const shortText = suggestion.label.replace(/^\.\.\./, '').trim();
+      typewriterFill(shortText);
+      setPhase('done');
+      return;
+    }
+
     const shouldAppend = Boolean(
       query.trim() &&
       hasCompletedSentence(query) &&
@@ -888,12 +896,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       typewriterFill(nextText + ' ');
     } else if (suggestion.phase === 'model') {
       setPhase('year');
-      typewriterFill(nextText + ', ');
+      typewriterFill(nextText + ' ');
     } else if (suggestion.phase === 'year') {
       const parsed = parseVehicleInput(nextText);
       if (parsed?.year && shouldRequireCondition(parsed.year)) {
         setPhase('condition');
-        typewriterFill(nextText + ', ');
+        typewriterFill(nextText + ' ');
       } else {
         typewriterFill(nextText);
         setPhase('done');
@@ -1206,7 +1214,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
                 >
-                  <span className="whitespace-nowrap">{suggestion.label}</span>
+                  <span className="whitespace-nowrap">{messages.length > 0 ? suggestion.label.replace(/^\.\.\./, '') : suggestion.label}</span>
                 </button>
               ))}
                 </div>

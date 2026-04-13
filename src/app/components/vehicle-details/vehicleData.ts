@@ -31,6 +31,13 @@ export const modelsByBrand: Record<string, string[]> = {
   Audi: ['TT', 'RS7', 'RS5', 'e-tron', 'A3', 'A8', 'Q8', 'Q3', 'A6', 'Q7', 'Q5', 'A4'],
 };
 
+// Default model car image
+export const DEFAULT_MODEL_IMAGE = 'https://png.pngtree.com/png-clipart/20250111/original/pngtree-a-red-suv-car-in-side-view-png-image_20147947.png';
+
+export function getModelImage(_brandName: string, _modelName: string): string {
+  return DEFAULT_MODEL_IMAGE;
+}
+
 export function getYearRange(): number[] {
   const currentYear = 2026;
   return Array.from({ length: 20 }, (_, i) => currentYear - 19 + i);

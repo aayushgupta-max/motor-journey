@@ -1,10 +1,17 @@
 import { useState } from "react";
-import { Camera } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Camera, Search } from "lucide-react";
 import { MulkiyaBottomSheet } from "./MulkiyaBottomSheet";
-import { SmartVehicleInput } from "./SmartVehicleInput";
+import { carBrands } from "./vehicle-details/vehicleData";
+import type { CarBrand } from "./vehicle-details/vehicleData";
 
 export function HeroSection() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const goToRequirements = (brand?: CarBrand) => {
+    navigate('/requirements', { state: brand ? { brand } : undefined });
+  };
 
   return (
     <div className="bg-white">
@@ -61,9 +68,32 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Smart Vehicle Input Card */}
-          <div className="bg-[#F3F5F7] rounded-[28px] flex flex-col">
-            <SmartVehicleInput />
+          {/* Find Your Car Card */}
+          <div className="bg-[#F3F5F7] rounded-[28px] border border-[#D6DADE] p-5 flex flex-col relative overflow-hidden shadow-[0_6px_18px_rgba(15,17,19,0.06)]">
+            <p className="text-[16px] text-[#0F1113] font-bold mb-2.5">Find your car</p>
+
+            {/* Dummy search bar — taps navigate to /requirements */}
+            <button
+              onClick={() => goToRequirements()}
+              className="w-full h-10 pl-9 pr-4 rounded-[10px] bg-[#FFFFFF] border border-[#D6DADE] text-[13px] text-[#B0B6BE] text-left relative mb-3 active:scale-[0.98] transition-all"
+            >
+              <Search className="w-3.5 h-3.5 text-[#B0B6BE] absolute left-3 top-1/2 -translate-y-1/2" />
+              Search your car model...
+            </button>
+
+            {/* Brand grid — 4 cols compact */}
+            <div className="grid grid-cols-4 gap-1.5">
+              {carBrands.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => goToRequirements(b)}
+                  className="flex flex-col items-center gap-1 py-2 px-1 rounded-[10px] bg-[#FFFFFF] border border-[#D6DADE] active:scale-[0.97] transition-all"
+                >
+                  <img src={b.initial} alt={b.name} className="w-6 h-6 object-contain" />
+                  <span className="text-[10px] text-[#0F1113]">{b.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

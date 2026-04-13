@@ -735,6 +735,24 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
   const filteredSuggestions = guidancePrompts.length > 0 ? [] : currentSuggestions;
 
+  // Debug: log state machine on meaningful changes
+  useEffect(() => {
+    console.log('[StateMachine]', {
+      phase,
+      isExtracting,
+      hasChosenToRefine,
+      shouldAskRefineChoice,
+      isQuoteReady,
+      messagesCount: messages.length,
+      visibleQuestion: visibleSystemQuestion?.slice(0, 60),
+      questionCategory: visibleSystemQuestion ? getQuestionCategory(visibleSystemQuestion, details) : null,
+      nextMissing: getNextMissingCategory(details),
+      guidanceCount: guidancePrompts.length,
+      suggestionCount: filteredSuggestions.length,
+      details: Object.fromEntries(Object.entries(details).filter(([, v]) => v)),
+    });
+  }, [phase, isExtracting, hasChosenToRefine, shouldAskRefineChoice, isQuoteReady, messages.length]);
+
   const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const typewriterFill = (text: string, callback?: () => void) => {

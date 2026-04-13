@@ -393,23 +393,22 @@ export function EditDetailsSheet({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
-        className="!rounded-t-[20px] bg-[#FFFFFF] px-0 pb-0 h-[80vh] max-h-[80vh] flex flex-col !gap-0 [&>button:last-of-type]:hidden"
+        className="!rounded-t-[20px] bg-[#FFFFFF] px-0 pb-0 h-[88vh] max-h-[88vh] flex flex-col !gap-0 [&>button:last-of-type]:hidden"
       >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3">
+        <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 rounded-full bg-[#D6DADE]" />
         </div>
 
         <SheetHeader className="px-5 py-0">
-          <SheetTitle className="text-[18px] text-[#0F1113]">Edit Details</SheetTitle>
-          <SheetDescription className="text-[12px] text-[#8A919A] mt-1">
+          <SheetTitle className="text-[16px] text-[#0F1113]">Edit Details</SheetTitle>
+          <SheetDescription className="text-[11px] text-[#8A919A]">
             Review and correct any details we captured
           </SheetDescription>
         </SheetHeader>
 
-        {/* Tab switcher — Apple segmented control */}
-        <div className="flex flex-col gap-1.5 mb-2">
-          <div className="mx-5 mt-2 flex rounded-xl bg-[#F3F5F7] p-1">
+        {/* Tab switcher */}
+        <div className="mx-5 mt-1.5 mb-1.5 flex rounded-xl bg-[#F3F5F7] p-1">
             <button
               type="button"
               onClick={() => setEditTab('car')}
@@ -449,7 +448,6 @@ export function EditDetailsSheet({
               </span>
             </button>
           </div>
-        </div>
 
         {/* Fields */}
         <div data-scroll-area className="flex-1 overflow-y-auto overscroll-contain px-5 pb-2 [-webkit-overflow-scrolling:touch]">

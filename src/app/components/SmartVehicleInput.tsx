@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import TextareaAutosize from 'react-textarea-autosize';
-import { SendHorizonal, Sparkles, Pencil, Check, Plus, X, ArrowRight, ClipboardList } from 'lucide-react';
+import { SendHorizonal, Sparkles, Pencil, Check, Plus, X, ArrowRight, ChevronRight, ClipboardList } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from './AuthContext';
 import { PageHeaderBar } from './PageHeaderBar';
@@ -157,7 +157,7 @@ function getSentenceTemplates(
   category: SuggestionCategory,
   inputText: string,
   details: RequirementDetails
-): string[] {
+): { label: string; text: string }[] {
   const prefix = getSentencePrefix(inputText);
   const remainder = getRemainderAfterPrefix(inputText);
   const fragment = normalizeVehicleQuery(getCurrentFragment(inputText));
@@ -167,7 +167,10 @@ function getSentenceTemplates(
     const matchingBrands = carBrands.filter((brand) =>
       !brandFragment || brand.name.toLowerCase().startsWith(brandFragment)
     );
-    return (brandFragment ? matchingBrands : carBrands).slice(0, 6).map((brand) => `${prefix}${brand.name}`);
+    return (brandFragment ? matchingBrands : carBrands).slice(0, 15).map((brand) => ({
+      label: `I have ${brand.name}...`,
+      text: `${prefix}${brand.name}`,
+    }));
   }
 
   if (category === 'model' && details.brand) {
@@ -175,8 +178,11 @@ function getSentenceTemplates(
     const models = [...(modelsByBrand[details.brand] ?? [])]
       .filter((model) => !modelFragment || model.toLowerCase().startsWith(modelFragment))
       .reverse()
-      .slice(0, 5);
-    return models.map((model) => `${prefix}${details.brand} ${model}`);
+      .slice(0, 15);
+    return models.map((model) => ({
+      label: `...${model}`,
+      text: `${prefix}${details.brand} ${model}`,
+    }));
   }
 
   if (category === 'year' && details.brand && details.model) {
@@ -184,41 +190,78 @@ function getSentenceTemplates(
     return [...getYearRange()]
       .reverse()
       .filter((year) => !yearFragment || String(year).startsWith(yearFragment))
-      .slice(0, 5)
-      .map((year) => `${prefix}${details.brand} ${details.model}, ${year} model`);
+      .slice(0, 10)
+      .map((year) => ({
+        label: `...${year} model`,
+        text: `${prefix}${details.brand} ${details.model}, ${year} model`,
+      }));
   }
 
   if (category === 'condition' && details.brand && details.model && details.year) {
     const baseText = `${prefix}${details.brand} ${details.model}, ${details.year} model`;
-    return [`${baseText}, brand new`, `${baseText}, pre-owned`];
+    return [
+      { label: '...brand new', text: `${baseText}, brand new` },
+      { label: '...pre-owned', text: `${baseText}, pre-owned` },
+    ];
   }
 
   if (category === 'coverage') {
-    return ['My previous insurance was Third Party.', 'My previous insurance was Comprehensive.'];
+    return [
+      { label: 'Third Party', text: 'My previous insurance was Third Party.' },
+      { label: 'Comprehensive', text: 'My previous insurance was Comprehensive.' },
+    ];
   }
 
   if (category === 'spec') {
-    return ['My car is GCC spec.', 'My car is non-GCC spec.', 'It is an imported car.'];
+    return [
+      { label: 'GCC', text: 'My car is GCC spec.' },
+      { label: 'Non-GCC', text: 'My car is non-GCC spec.' },
+      { label: 'Imported', text: 'It is an imported car.' },
+    ];
   }
 
   if (category === 'city') {
-    return ['My car is registered in Dubai.', 'My car is registered in Abu Dhabi.', 'My car is registered in Sharjah.'];
+    return ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'].map((city) => ({
+      label: city,
+      text: `My car is registered in ${city}.`,
+    }));
   }
 
   if (category === 'nationality') {
-    return ['I am Indian.', 'I am Pakistani.', 'I am Filipino.', 'I am Emirati.', 'I am British.'];
+    return ['Indian', 'Pakistani', 'Filipino', 'Bangladeshi', 'Sri Lankan', 'Emirati', 'Egyptian', 'Jordanian', 'Lebanese', 'British', 'American', 'Canadian'].map((nat) => ({
+      label: nat,
+      text: `I am ${nat}.`,
+    }));
   }
 
   if (category === 'drivingExperience') {
-    return ['I have 3-5 years driving experience.', 'I have 5-8 years driving experience.', 'I have 10+ years driving experience.'];
+    return [
+      { label: '< 1 year', text: 'Less than 1 year driving experience.' },
+      { label: '1-2 years', text: '1-2 years driving experience.' },
+      { label: '3-5 years', text: '3-5 years driving experience.' },
+      { label: '5-8 years', text: '5-8 years driving experience.' },
+      { label: '8-10 years', text: '8-10 years driving experience.' },
+      { label: '10+ years', text: '10+ years driving experience.' },
+    ];
   }
 
   if (category === 'accidentFreeMonths') {
-    return ['I have never claimed.', 'No accident in 3+ years.', 'No accident in 1-2 years.'];
+    return [
+      { label: 'Never claimed', text: 'I have never claimed.' },
+      { label: '3+ years', text: 'No accident in 3+ years.' },
+      { label: '2-3 years', text: 'No accident in 2-3 years.' },
+      { label: '1-2 years', text: 'No accident in 1-2 years.' },
+      { label: '6-12 months', text: 'No accident in 6-12 months.' },
+      { label: '< 6 months', text: 'Less than 6 months claim-free.' },
+    ];
   }
 
   if (category === 'expiry') {
-    return ['My current policy expires next month.', 'My current policy already expired.', 'My renewal is due this week.'];
+    return [
+      { label: 'Next month', text: 'My current policy expires next month.' },
+      { label: 'Already expired', text: 'My current policy already expired.' },
+      { label: 'This week', text: 'My renewal is due this week.' },
+    ];
   }
 
   return [];
@@ -255,7 +298,7 @@ function generateSuggestions(
   phase: SuggestionPhase,
   details: RequirementDetails,
   activeQuestion?: string
-): { text: string; phase: SuggestionPhase }[] {
+): { label: string; text: string; phase: SuggestionPhase }[] {
   const askedCategory = getQuestionCategory(activeQuestion, details);
   if (!askedCategory) return [];
 
@@ -271,9 +314,9 @@ function generateSuggestions(
       : phase;
 
   return getSentenceTemplates(category, inputText, details)
-    .filter((template) => isSuggestionRelevant(inputText, template, category))
-    .slice(0, 6)
-    .map((text) => ({ text, phase: nextPhase }));
+    .filter((template) => isSuggestionRelevant(inputText, template.text, category))
+    .slice(0, 15)
+    .map((t) => ({ label: t.label, text: t.text, phase: nextPhase }));
 }
 
 function extractDob(inputText: string, allowBareDate = false): string | null {
@@ -496,6 +539,14 @@ function getGuidancePrompts(
     prompts.push({ key: 'nationality', text: 'I am Indian' });
     prompts.push({ key: 'nationality', text: 'I am Pakistani' });
     prompts.push({ key: 'nationality', text: 'I am Filipino' });
+    prompts.push({ key: 'nationality', text: 'I am Bangladeshi' });
+    prompts.push({ key: 'nationality', text: 'I am Sri Lankan' });
+    prompts.push({ key: 'nationality', text: 'I am Emirati' });
+    prompts.push({ key: 'nationality', text: 'I am Egyptian' });
+    prompts.push({ key: 'nationality', text: 'I am Jordanian' });
+    prompts.push({ key: 'nationality', text: 'I am Lebanese' });
+    prompts.push({ key: 'nationality', text: 'I am British' });
+    prompts.push({ key: 'nationality', text: 'I am American' });
     return prompts;
   }
 
@@ -509,6 +560,10 @@ function getGuidancePrompts(
   if (questionCategory === 'accidentFreeMonths' && !details.accidentFreeMonths) {
     prompts.push({ key: 'accidentFreeMonths', text: 'Never claimed' });
     prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 3+ years' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 2-3 years' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 1-2 years' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'No accident in 6-12 months' });
+    prompts.push({ key: 'accidentFreeMonths', text: 'Less than 6 months claim-free' });
     return prompts;
   }
 
@@ -538,7 +593,7 @@ function getNextQuestion(details: RequirementDetails, quoteCount?: number): stri
 }
 
 function getPostUnlockQuestion(quoteCount: number, confidencePct: number): string {
-  return `🎉 ${quoteCount} quotes unlocked!\n⚠️ ${confidencePct}% confidence — add more details to improve pricing accuracy.`;
+  return `⚠️ Low Confidence\n${quoteCount} Quotes Unlocked! Add more details to improve premium confidence.`;
 }
 
 function getEstimatedQuoteCount(details: RequirementDetails): number {
@@ -564,7 +619,7 @@ function renderAssistantMessage(text: string) {
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <p className="text-[14px] leading-5">{intro}</p>
       <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">{emphasis}</p>
       {rest.map((line, index) => (
@@ -662,7 +717,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const normalizedQuery = normalizeVehicleQuery(query);
   const draftDetails = mergeDetails(details, parseDetailsFromText(query, visibleSystemQuestion));
   const hasSystemQuestion = Boolean(visibleSystemQuestion);
-  const currentSuggestions = hasSystemQuestion
+  const currentSuggestions = hasSystemQuestion && !shouldAskRefineChoice
     ? generateSuggestions(query, phase, draftDetails, visibleSystemQuestion)
     : [];
   const ghost = normalizedQuery === query.toLowerCase().trim()
@@ -680,6 +735,53 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
   const filteredSuggestions = guidancePrompts.length > 0 ? [] : currentSuggestions;
 
+  // Debug: log state machine on meaningful changes
+  useEffect(() => {
+    console.log('[StateMachine]', {
+      phase,
+      isExtracting,
+      hasChosenToRefine,
+      shouldAskRefineChoice,
+      isQuoteReady,
+      messagesCount: messages.length,
+      visibleQuestion: visibleSystemQuestion?.slice(0, 60),
+      questionCategory: visibleSystemQuestion ? getQuestionCategory(visibleSystemQuestion, details) : null,
+      nextMissing: getNextMissingCategory(details),
+      guidanceCount: guidancePrompts.length,
+      suggestionCount: filteredSuggestions.length,
+      details: Object.fromEntries(Object.entries(details).filter(([, v]) => v)),
+    });
+  }, [phase, isExtracting, hasChosenToRefine, shouldAskRefineChoice, isQuoteReady, messages.length]);
+
+  const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const typewriterFill = (text: string, callback?: () => void) => {
+    if (typewriterRef.current) clearTimeout(typewriterRef.current);
+    // Find common prefix to only animate the new portion
+    const current = query;
+    let prefixLen = 0;
+    while (prefixLen < current.length && prefixLen < text.length && current[prefixLen] === text[prefixLen]) {
+      prefixLen++;
+    }
+    let i = prefixLen;
+    setQuery(text.slice(0, i));
+    const step = () => {
+      i++;
+      setQuery(text.slice(0, i));
+      if (i < text.length) {
+        typewriterRef.current = setTimeout(step, 8);
+      } else {
+        typewriterRef.current = null;
+        callback?.();
+      }
+    };
+    if (i < text.length) {
+      typewriterRef.current = setTimeout(step, 8);
+    } else {
+      callback?.();
+    }
+  };
+
   const focusInput = () => {
     requestAnimationFrame(() => {
       const input = inputRef.current;
@@ -694,12 +796,15 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     if (expanded) {
       focusInput();
     }
-  }, [expanded, phase]);
+  }, [expanded]);
 
   useEffect(() => {
     return () => {
       if (extractionTimerRef.current) {
         window.clearTimeout(extractionTimerRef.current);
+      }
+      if (typewriterRef.current) {
+        clearTimeout(typewriterRef.current);
       }
     };
   }, []);
@@ -788,7 +893,16 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     previousDetailsRef.current = emptyDetails;
   };
 
-  const handleSuggestionClick = (suggestion: { text: string; phase: SuggestionPhase }) => {
+  const handleSuggestionClick = (suggestion: { text: string; label: string; phase: SuggestionPhase }) => {
+    // Follow-up questions: just fill the short answer, don't rebuild the full sentence
+    if (messages.length > 0) {
+      const shortText = suggestion.label.replace(/^\.\.\./, '').trim();
+      const current = query.trim();
+      typewriterFill(current ? `${current}, ${shortText}` : shortText);
+      setPhase('done');
+      return;
+    }
+
     const shouldAppend = Boolean(
       query.trim() &&
       hasCompletedSentence(query) &&
@@ -798,31 +912,30 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
     if (suggestion.phase === 'brand') {
       setPhase('model');
-      setQuery(nextText + ' ');
+      typewriterFill(nextText + ' ');
     } else if (suggestion.phase === 'model') {
       setPhase('year');
-      setQuery(nextText + ', ');
+      typewriterFill(nextText + ' ');
     } else if (suggestion.phase === 'year') {
       const parsed = parseVehicleInput(nextText);
       if (parsed?.year && shouldRequireCondition(parsed.year)) {
         setPhase('condition');
-        setQuery(nextText + ', ');
+        typewriterFill(nextText + ' ');
       } else {
-        setQuery(nextText);
+        typewriterFill(nextText);
         setPhase('done');
         return;
       }
     } else if (suggestion.phase === 'condition') {
-      setQuery(nextText);
+      typewriterFill(nextText);
       setPhase('done');
       return;
     } else {
-      setQuery(nextText + ' ');
+      typewriterFill(nextText + ' ');
       setPhase(phase);
       return;
     }
 
-    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const handleSubmit = (text?: string) => {
@@ -863,6 +976,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setQuery('');
     setAttachments([]);
     setIsExtracting(true);
+    inputRef.current?.blur();
 
     if (extractionTimerRef.current) {
       window.clearTimeout(extractionTimerRef.current);
@@ -900,10 +1014,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   };
 
   const handleGuidancePromptClick = (text: string) => {
-    if (text === 'Yes, ask and improve confidence!') {
-      setHasChosenToRefine(true);
-    }
-    handleSubmit(text);
+    typewriterFill(text);
   };
 
   const goToQuotes = () => {
@@ -989,7 +1100,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     return (
       <div
         ref={overlayRef}
-        className="flex flex-col bg-white overscroll-none [touch-action:manipulation]"
+        className="flex w-full flex-col bg-white overscroll-none"
         style={{
           height: viewportHeight ? `${viewportHeight}px` : '100dvh',
         }}
@@ -1067,16 +1178,17 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <span>Extracting details...</span>
               </div>
             )}
-            {hasExtraction && isQuoteReady && (
+            {hasExtraction && isQuoteReady && !isExtracting && (
               <div className="pt-0.5 flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={goToQuotes}
-                  className="h-9 rounded-full bg-[#0F1113] px-4 text-sm flex-shrink-0"
+                  className="inline-flex items-center gap-2 h-9 rounded-full bg-[#0F1113] px-4 text-sm flex-shrink-0"
                 >
                   <span className="shimmer-text">
                     {`Show ${quoteCount} Quotes`}
                   </span>
+                  <ChevronRight className="h-4 w-4 text-white/70" />
                 </button>
                 {confidencePct < 100 && (
                   <span className="text-[11px] leading-tight text-[#8A919A]">
@@ -1089,58 +1201,42 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         </div>
 
         {/* Bottom input */}
-        <div ref={inputBarRef} className="bg-[#FFFFFF] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 [touch-action:manipulation]">
-          {messages.length === 0 && (
-            <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
-              Type naturally and we will capture important details.
-            </p>
-          )}
-          {(filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
-            <div className="mb-[8px] rounded-[18px] border-[0.5px] border-[#E8EAED] bg-[#F3F5F7] p-[1px]">
-              <div className="overflow-hidden rounded-[16px] bg-[#FFFFFF]">
-                {shouldAskRefineChoice ? (
-                  <button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={goToQuotes}
-                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[14px] text-[#0F1113] transition-colors hover:bg-[#FAFBFC] ${
-                      guidancePrompts.length > 0 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
-                    }`}
-                  >
-                    <div className="flex min-w-0 items-start gap-2.5">
-                      <ClipboardList className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#B0B6BE]" />
-                      <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] font-medium leading-5">
-                        {`No, let's see ${quoteCount} quotes`}
-                      </span>
-                    </div>
-                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#0F1113]" />
-                  </button>
-                ) : null}
-                {guidancePrompts.slice(0, 3).map((prompt, index) => (
-                  <button
-                    key={`${prompt.key}-${prompt.text}`}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleGuidancePromptClick(prompt.text)}
-                    className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
-                      index !== guidancePrompts.slice(0, 3).length - 1 || filteredSuggestions.length > 0 ? 'border-b border-[#D6DADE]' : ''
-                    }`}
-                  >
-                    <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
-                    <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] leading-5">{prompt.text}</span>
-                  </button>
-                ))}
-                {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
-                  <button
-                    key={suggestion.text}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className={`flex w-full items-start gap-2.5 px-3 py-2 text-left text-[14px] text-[#4B525A] transition-colors hover:bg-[#FAFBFC] ${
-                      index !== filteredSuggestions.slice(0, 5).length - 1 ? 'border-b border-[#D6DADE]' : ''
-                    }`}
-                  >
-                    <Sparkles className="mt-0.5 h-4 w-4 text-[#B0B6BE] flex-shrink-0" />
-                    <span className="min-w-0 whitespace-normal [overflow-wrap:normal] [word-break:keep-all] leading-5">{suggestion.text}</span>
-                  </button>
-                ))}
+        <div ref={inputBarRef} className="bg-[#F3F5F7] border-t border-[#D6DADE] px-5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
+          <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
+            Type naturally and we will capture important details.
+          </p>
+          {!isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
+            <div data-chips-scroll className="mb-1.5 -mx-5 overflow-x-auto px-5 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [animation:chipsFadeIn_0.3s_ease-out]">
+              <div className="w-max space-y-2">
+                <div className="flex w-max gap-2">
+              {guidancePrompts.map((prompt) => (
+                <button
+                  key={`${prompt.key}-${prompt.text}`}
+                  onClick={() => handleGuidancePromptClick(prompt.text)}
+                  className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
+                >
+                  <span className="whitespace-nowrap">{prompt.text}</span>
+                </button>
+              ))}
+              {shouldAskRefineChoice && !isExtracting && (
+                <button
+                  onClick={goToQuotes}
+                  className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[999px] bg-[#F3F5F7] px-2.5 py-1.5 text-[13px] font-medium text-[#0F1113] transition-all hover:bg-[#E8EAED] active:scale-[0.97]"
+                >
+                  <span className="whitespace-nowrap">{`See ${quoteCount} quotes`}</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-[#5E6670]" />
+                </button>
+              )}
+              {filteredSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.text}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-2.5 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97]"
+                >
+                  <span className="whitespace-nowrap">{messages.length > 0 ? suggestion.label.replace(/^\.\.\./, '') : suggestion.label}</span>
+                </button>
+              ))}
+                </div>
               </div>
             </div>
           )}
@@ -1165,7 +1261,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               ))}
             </div>
           )}
-          <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)]">
+          <div className="w-full rounded-[22px] border border-[#D6DADE] bg-[#F3F5F7] px-3 py-2.5 text-left shadow-[0_8px_24px_rgba(15,17,19,0.08)] transition-all focus-within:border-[#0F1113] focus-within:bg-[#FFFFFF] focus-within:shadow-[0_10px_26px_rgba(15,17,19,0.10)] [touch-action:manipulation]">
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
@@ -1199,8 +1295,11 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={() => {
-                    // On Safari, scroll the input bar into view when keyboard opens
+                    // On Safari, scroll chat to bottom + input into view when keyboard opens
                     setTimeout(() => {
+                      if (suggestionsScrollRef.current) {
+                        suggestionsScrollRef.current.scrollTop = suggestionsScrollRef.current.scrollHeight;
+                      }
                       inputBarRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
                     }, 300);
                   }}

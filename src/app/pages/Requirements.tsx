@@ -23,7 +23,7 @@ export default function Requirements() {
     const preventBounce = (e: TouchEvent) => {
       // Allow scrolling inside the chat scroll area
       const target = e.target as HTMLElement;
-      if (target.closest('[data-scroll-area]')) return;
+      if (target.closest('[data-scroll-area]') || target.closest('[data-chips-scroll]')) return;
       e.preventDefault();
     };
     document.addEventListener('touchmove', preventBounce, { passive: false });

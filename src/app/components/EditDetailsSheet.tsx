@@ -144,6 +144,26 @@ function EditTextField({
   placeholder?: string;
   inputMode?: 'text' | 'tel' | 'numeric';
 }) {
+  const formatUAEPhone = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    // Handle +971 prefix
+    const local = digits.startsWith('971') ? digits.slice(3) : digits.startsWith('0') ? digits.slice(1) : digits;
+    const trimmed = local.slice(0, 9);
+    if (trimmed.length <= 2) return `+971 ${trimmed}`;
+    if (trimmed.length <= 5) return `+971 ${trimmed.slice(0, 2)} ${trimmed.slice(2)}`;
+    return `+971 ${trimmed.slice(0, 2)} ${trimmed.slice(2, 5)} ${trimmed.slice(5)}`;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (inputMode === 'tel') {
+      const digits = e.target.value.replace(/\D/g, '');
+      if (digits.length === 0) { onChange(''); return; }
+      onChange(formatUAEPhone(e.target.value));
+    } else {
+      onChange(e.target.value);
+    }
+  };
+
   return (
     <label className={`relative block rounded-xl border bg-[#FAFBFC] px-4 py-2.5 transition-colors ${
       value ? 'border-[#D6DADE]' : 'border-[#E8EAED]'
@@ -151,9 +171,10 @@ function EditTextField({
       <span className="block text-[11px] text-[#5E6670] leading-none mb-1">{label}</span>
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleChange}
         placeholder={placeholder}
         inputMode={inputMode}
+        maxLength={inputMode === 'tel' ? 16 : undefined}
         className="w-full bg-transparent text-[14px] text-[#0F1113] outline-none placeholder:text-[#B0B6BE]"
       />
     </label>
@@ -400,9 +421,9 @@ export function EditDetailsSheet({
           <div className="w-10 h-1 rounded-full bg-[#D6DADE]" />
         </div>
 
-        <SheetHeader className="px-5 py-0">
-          <SheetTitle className="text-[16px] text-[#0F1113]">Edit Details</SheetTitle>
-          <SheetDescription className="text-[11px] text-[#8A919A]">
+        <SheetHeader className="!gap-0.5 !px-5 !py-2">
+          <SheetTitle className="text-[16px] font-bold text-[#3A3F45]">Edit Details</SheetTitle>
+          <SheetDescription className="text-[12px] font-normal text-[#8A919A]">
             Review and correct any details we captured
           </SheetDescription>
         </SheetHeader>

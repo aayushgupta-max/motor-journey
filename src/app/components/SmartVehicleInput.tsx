@@ -16,6 +16,7 @@ import {
   getCompletedFieldCount,
   getTotalFieldCount,
   getConfidenceScore,
+  getConfidenceLevel,
   type QuoteFlowDetails,
 } from '../lib/quoteFlow';
 import {
@@ -342,10 +343,35 @@ function extractDob(inputText: string, allowBareDate = false): string | null {
 
   if (!match?.[1]) return null;
 
-  return match[1]
-    .replace(/\s+/g, ' ')
-    .replace(/,\s*/g, ' ')
-    .trim();
+  const raw = match[1].replace(/\s+/g, ' ').replace(/,\s*/g, ' ').trim();
+
+  // Normalize to YYYY-MM-DD for EditDateField compatibility
+  const monthMap: Record<string, string> = {
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', sept: '09', oct: '10', nov: '11', dec: '12',
+  };
+
+  // "15 Mar 1990" or "15th March 1990"
+  const dmy = raw.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+(\d{4})$/i);
+  if (dmy) return `${dmy[3]}-${monthMap[dmy[2].toLowerCase()]}-${String(dmy[1]).padStart(2, '0')}`;
+
+  // "Mar 15 1990" or "March 15th 1990"
+  const mdy = raw.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{4})$/i);
+  if (mdy) return `${mdy[3]}-${monthMap[mdy[1].toLowerCase()]}-${String(mdy[2]).padStart(2, '0')}`;
+
+  // "15/03/1990" or "15-03-1990" or "15.03.1990" (DD/MM/YYYY)
+  const slashDmy = raw.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/);
+  if (slashDmy) return `${slashDmy[3]}-${String(slashDmy[2]).padStart(2, '0')}-${String(slashDmy[1]).padStart(2, '0')}`;
+
+  // "1990/03/15" or "1990-03-15" (YYYY/MM/DD)
+  const isoDate = raw.match(/^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})$/);
+  if (isoDate) return `${isoDate[1]}-${String(isoDate[2]).padStart(2, '0')}-${String(isoDate[3]).padStart(2, '0')}`;
+
+  // "15031990" (DDMMYYYY)
+  const compact = raw.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (compact) return `${compact[3]}-${compact[2]}-${compact[1]}`;
+
+  return raw;
 }
 
 function extractName(inputText: string, allowBareName = false): string | null {
@@ -593,7 +619,8 @@ function getNextQuestion(details: RequirementDetails, quoteCount?: number): stri
 }
 
 function getPostUnlockQuestion(quoteCount: number, confidencePct: number): string {
-  return `⚠️ Low Confidence\n${quoteCount} Quotes Unlocked! Add more details to improve premium confidence.`;
+  const level = getConfidenceLevel(confidencePct);
+  return `${quoteCount} Quotes Unlocked!\n${level.message}.`;
 }
 
 function getEstimatedQuoteCount(details: RequirementDetails): number {
@@ -1118,7 +1145,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 key={answeredCount}
                 className="relative rounded-full p-[2px]"
                 style={{
-                  background: `conic-gradient(#0F1113 ${confidencePct}%, #D6DADE 0%)`,
+                  background: `conic-gradient(${getConfidenceLevel(confidencePct).color} ${confidencePct}%, #D6DADE 0%)`,
                 }}
               >
                 <div className={`flex items-center gap-1.5 rounded-full px-1 py-1 ${isQuoteReady ? 'bg-[#FAFBFC]' : 'bg-[#F3F5F7]'}`}>
@@ -1179,22 +1206,28 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               </div>
             )}
             {hasExtraction && isQuoteReady && !isExtracting && (
-              <div className="pt-0.5 flex items-center gap-2.5">
+              <div className="-mt-1 flex flex-col items-start gap-1.5">
                 <button
                   type="button"
                   onClick={goToQuotes}
-                  className="inline-flex items-center gap-2 h-9 rounded-full bg-[#0F1113] px-4 text-sm flex-shrink-0"
+                  className="inline-flex items-center gap-2 h-8 rounded-full bg-[#0F1113] px-4 text-[14px]"
                 >
                   <span className="shimmer-text">
                     {`Show ${quoteCount} Quotes`}
                   </span>
                   <ChevronRight className="h-4 w-4 text-white/70" />
                 </button>
-                {confidencePct < 100 && (
-                  <span className="text-[11px] leading-tight text-[#8A919A]">
-                    ⚠️ {confidencePct}% confidence
-                  </span>
-                )}
+                {confidencePct < 100 && (() => {
+                  const level = getConfidenceLevel(confidencePct);
+                  return (
+                    <div className="flex items-center gap-1.5 pl-1">
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: level.color }} />
+                      <span className="text-[11px] text-[#8A919A]">
+                        <strong className="font-semibold text-[#5E6670]">{confidencePct}% confidence</strong> — {level.message.toLowerCase()}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

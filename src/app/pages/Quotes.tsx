@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { Header } from '../components/Header';
 import { Star, Check, Lock, X, ClipboardList, Pencil } from 'lucide-react';
 import { motion } from 'motion/react';
-import { SlidersHorizontal, ArrowUpDown, Search } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, Search, ArrowLeftRight } from 'lucide-react';
 import { DLUploadBottomSheet } from '../components/DLUploadBottomSheet';
 import { LoginModal } from '../components/LoginModal';
 import { AiAssistantButton } from '../components/AiAssistantButton';
@@ -18,6 +18,7 @@ import {
   buildVehicleSubtitle,
   emptyQuoteFlowDetails,
   getCompletedFieldCount,
+  getConfidenceLevel,
   getConfidenceScore,
   getNextQuotesAction,
   getTotalFieldCount,
@@ -39,7 +40,7 @@ const allFilterOptions = [
   { label: 'Theft Cover', category: 'Benefits' },
 ];
 
-const quickFilters = ['Comprehensive', 'Third Party', 'Agency Repair', 'Roadside Assist', 'Oman Cover'];
+const quickFilters = ['Comprehensive', 'Third Party', 'Agency Repair', '24/7 Roadside', 'Oman Extension', 'GAP Insurance', 'Rental Car'];
 
 const quotes = [
   {
@@ -53,7 +54,7 @@ const quotes = [
     optimizedPrice: 1049,
     originalPrice: 1899,
     coverage: 'Comprehensive',
-    features: ['Agency Repair', '24/7 Roadside', 'Oman Extension', 'Personal Accident'],
+    features: ['Agency Repair', '24/7 Roadside', 'Oman Extension', 'Personal Accident', 'Windshield Cover', 'Rental Car (30 days)'],
     badge: 'Best Value',
   },
   {
@@ -67,7 +68,7 @@ const quotes = [
     optimizedPrice: 1159,
     originalPrice: 2100,
     coverage: 'Comprehensive',
-    features: ['Agency Repair', 'Windshield Cover', 'GAP Insurance'],
+    features: ['Agency Repair', 'Windshield Cover', 'GAP Insurance', 'Off-road Cover', 'Oman Extension', 'Key Replacement'],
     badge: null,
   },
   {
@@ -81,7 +82,7 @@ const quotes = [
     optimizedPrice: 1199,
     originalPrice: 1950,
     coverage: 'Comprehensive',
-    features: ['Non-Agency Repair', '24/7 Roadside', 'Oman Extension'],
+    features: ['Non-Agency Repair', '24/7 Roadside', 'Oman Extension', 'Personal Accident', 'Natural Disaster', 'Towing (200km)'],
     badge: null,
   },
   {
@@ -95,7 +96,7 @@ const quotes = [
     optimizedPrice: 1289,
     originalPrice: 2200,
     coverage: 'Comprehensive',
-    features: ['Agency Repair', 'Natural Disaster', 'Theft Cover'],
+    features: ['Agency Repair', 'Natural Disaster', 'Theft Cover', 'Windshield Cover', 'Rental Car (15 days)', 'GCC Extension'],
     badge: null,
   },
   {
@@ -105,11 +106,221 @@ const quotes = [
     color: '#8A919A',
     bg: '#F3F5F7',
     rating: 4.6,
-    price: 1599,
-    optimizedPrice: 1349,
-    originalPrice: 2050,
+    price: 789,
+    optimizedPrice: 649,
+    originalPrice: 1050,
     coverage: 'Third Party',
-    features: ['Basic Cover', '24/7 Roadside'],
+    features: ['Third Party Liability', '24/7 Roadside', 'Personal Accident', 'Oman Extension', 'Towing (100km)', 'Emergency Medical'],
+    badge: null,
+  },
+  {
+    id: 6,
+    provider: 'RSA Insurance',
+    initial: 'RS',
+    color: '#3A3F45',
+    bg: '#F3F5F7',
+    rating: 4.7,
+    price: 1299,
+    optimizedPrice: 1089,
+    originalPrice: 1850,
+    coverage: 'Comprehensive',
+    features: ['Agency Repair', 'Oman Extension', 'Theft Cover', '24/7 Roadside', 'Depreciation Cover', 'Windshield Cover'],
+    badge: null,
+  },
+  {
+    id: 7,
+    provider: 'Salama Insurance',
+    initial: 'SI',
+    color: '#4B525A',
+    bg: '#FAFBFC',
+    rating: 4.5,
+    price: 849,
+    optimizedPrice: 699,
+    originalPrice: 1200,
+    coverage: 'Third Party',
+    features: ['Third Party Liability', 'Personal Accident', 'Emergency Medical', 'Towing (50km)', 'Oman Extension', 'Driver Cover'],
+    badge: null,
+  },
+  {
+    id: 8,
+    provider: 'Zurich Insurance',
+    initial: 'ZI',
+    color: '#3A3F45',
+    bg: '#F3F5F7',
+    rating: 4.8,
+    price: 1575,
+    optimizedPrice: 1325,
+    originalPrice: 2300,
+    coverage: 'Comprehensive',
+    features: ['Agency Repair', '24/7 Roadside', 'GAP Insurance', 'Oman Extension', 'Rental Car (30 days)', 'No Depreciation', 'Key Replacement'],
+    badge: null,
+  },
+  {
+    id: 9,
+    provider: 'Tokio Marine',
+    initial: 'TM',
+    color: '#5E6670',
+    bg: '#FAFBFC',
+    rating: 4.6,
+    price: 1350,
+    optimizedPrice: 1129,
+    originalPrice: 1900,
+    coverage: 'Comprehensive',
+    features: ['Non-Agency Repair', 'Oman Extension', '24/7 Roadside', 'Natural Disaster', 'Personal Accident', 'Windshield Cover'],
+    badge: null,
+  },
+  {
+    id: 10,
+    provider: 'Noor Takaful',
+    initial: 'NT',
+    color: '#4B525A',
+    bg: '#F3F5F7',
+    rating: 4.4,
+    price: 699,
+    optimizedPrice: 579,
+    originalPrice: 950,
+    coverage: 'Third Party',
+    features: ['Third Party Liability', 'Oman Extension', 'Personal Accident', 'Towing (100km)', 'Emergency Medical', 'Fire & Theft'],
+    badge: null,
+  },
+  {
+    id: 11,
+    provider: 'Adamjee Insurance',
+    initial: 'AI',
+    color: '#5E6670',
+    bg: '#FAFBFC',
+    rating: 4.3,
+    price: 1189,
+    optimizedPrice: 989,
+    originalPrice: 1650,
+    coverage: 'Comprehensive',
+    features: ['Non-Agency Repair', '24/7 Roadside', 'Personal Accident', 'Towing (150km)', 'Oman Extension', 'Windshield Cover'],
+    badge: null,
+  },
+  {
+    id: 12,
+    provider: 'Al Sagr Insurance',
+    initial: 'AS',
+    color: '#3A3F45',
+    bg: '#F3F5F7',
+    rating: 4.5,
+    price: 729,
+    optimizedPrice: 599,
+    originalPrice: 1100,
+    coverage: 'Third Party',
+    features: ['Third Party Liability', '24/7 Roadside', 'Driver Cover', 'Oman Extension', 'Emergency Medical', 'Towing (75km)'],
+    badge: null,
+  },
+  {
+    id: 13,
+    provider: 'Watania Insurance',
+    initial: 'WI',
+    color: '#4B525A',
+    bg: '#FAFBFC',
+    rating: 4.6,
+    price: 1449,
+    optimizedPrice: 1219,
+    originalPrice: 2050,
+    coverage: 'Comprehensive',
+    features: ['Agency Repair', 'Windshield Cover', 'Oman Extension', 'Rental Car (20 days)', 'Natural Disaster', 'Personal Accident'],
+    badge: null,
+  },
+  {
+    id: 14,
+    provider: 'Takaful Emarat',
+    initial: 'TE',
+    color: '#5E6670',
+    bg: '#F3F5F7',
+    rating: 4.4,
+    price: 819,
+    optimizedPrice: 679,
+    originalPrice: 1150,
+    coverage: 'Third Party',
+    features: ['Third Party Liability', 'Personal Accident', 'Fire & Theft', '24/7 Roadside', 'Towing (100km)', 'GCC Extension'],
+    badge: null,
+  },
+  {
+    id: 15,
+    provider: 'ADNIC',
+    initial: 'AD',
+    color: '#3A3F45',
+    bg: '#FAFBFC',
+    rating: 4.7,
+    price: 1525,
+    optimizedPrice: 1279,
+    originalPrice: 2150,
+    coverage: 'Comprehensive',
+    features: ['Agency Repair', '24/7 Roadside', 'Theft Cover', 'Natural Disaster', 'GAP Insurance', 'Rental Car (30 days)', 'No Depreciation'],
+    badge: null,
+  },
+  {
+    id: 16,
+    provider: 'Emirates Insurance',
+    initial: 'EI',
+    color: '#4B525A',
+    bg: '#F3F5F7',
+    rating: 4.5,
+    price: 1329,
+    optimizedPrice: 1109,
+    originalPrice: 1850,
+    coverage: 'Comprehensive',
+    features: ['Non-Agency Repair', 'Oman Extension', 'Windshield Cover', '24/7 Roadside', 'Personal Accident', 'Towing (200km)'],
+    badge: null,
+  },
+  {
+    id: 17,
+    provider: 'Fidelity United',
+    initial: 'FU',
+    color: '#5E6670',
+    bg: '#FAFBFC',
+    rating: 4.3,
+    price: 659,
+    optimizedPrice: 539,
+    originalPrice: 900,
+    coverage: 'Third Party',
+    features: ['Third Party Liability', 'Personal Accident', 'Towing (50km)', 'Emergency Medical', 'Driver Cover', 'Oman Extension'],
+    badge: null,
+  },
+  {
+    id: 18,
+    provider: 'Al Dhafra Insurance',
+    initial: 'DH',
+    color: '#3A3F45',
+    bg: '#F3F5F7',
+    rating: 4.6,
+    price: 1399,
+    optimizedPrice: 1169,
+    originalPrice: 1950,
+    coverage: 'Comprehensive',
+    features: ['Agency Repair', '24/7 Roadside', 'Personal Accident', 'Off-road Cover', 'Oman Extension', 'Key Replacement'],
+    badge: null,
+  },
+  {
+    id: 19,
+    provider: 'Methaq Takaful',
+    initial: 'MT',
+    color: '#4B525A',
+    bg: '#FAFBFC',
+    rating: 4.4,
+    price: 759,
+    optimizedPrice: 629,
+    originalPrice: 1050,
+    coverage: 'Third Party',
+    features: ['Third Party Liability', '24/7 Roadside', 'Oman Extension', 'Fire & Theft', 'Personal Accident', 'Towing (100km)'],
+    badge: null,
+  },
+  {
+    id: 20,
+    provider: 'Sukoon Insurance',
+    initial: 'SK',
+    color: '#5E6670',
+    bg: '#F3F5F7',
+    rating: 4.5,
+    price: 1475,
+    optimizedPrice: 1239,
+    originalPrice: 2100,
+    coverage: 'Comprehensive',
+    features: ['Agency Repair', 'Oman Extension', 'GAP Insurance', 'Theft Cover', 'Depreciation Cover', 'Rental Car (15 days)'],
     badge: null,
   },
 ];
@@ -157,6 +368,10 @@ export default function Quotes() {
   const [showMulkiyaSheet, setShowMulkiyaSheet] = useState(false);
   const [showDLSheet, setShowDLSheet] = useState(false);
   const [showEditSheet, setShowEditSheet] = useState(false);
+  const [compareIds, setCompareIds] = useState<number[]>([]);
+  const toggleCompare = (id: number) => {
+    setCompareIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 3 ? [...prev, id] : prev);
+  };
   const answeredCount = getCompletedFieldCount(profile, isLoggedIn);
   const totalQuestions = getTotalFieldCount(profile);
   const allSurveyDone = getNextQuotesAction(profile, isLoggedIn) === 'done';
@@ -183,21 +398,10 @@ export default function Quotes() {
     if (coverageFilters.length > 0) {
       filtered = filtered.filter((q) => coverageFilters.includes(q.coverage));
     }
-    const featureMap: Record<string, string> = {
-      'Agency Repair': 'Agency Repair',
-      'Non-Agency Repair': 'Non-Agency Repair',
-      'Roadside Assist': '24/7 Roadside',
-      'Oman Cover': 'Oman Extension',
-      'Windshield Cover': 'Windshield Cover',
-      'Personal Accident': 'Personal Accident',
-      'GAP Insurance': 'GAP Insurance',
-      'Natural Disaster': 'Natural Disaster',
-      'Theft Cover': 'Theft Cover',
-    };
-    const featureFilters = activeFilters.filter((f) => f in featureMap);
+    const featureFilters = activeFilters.filter((f) => !['Comprehensive', 'Third Party'].includes(f));
     if (featureFilters.length > 0) {
       filtered = filtered.filter((q) =>
-        featureFilters.every((f) => q.features.includes(featureMap[f]))
+        featureFilters.every((f) => q.features.some((feat) => feat.includes(f)))
       );
     }
     if (sortBy === 'price-low') filtered.sort((a, b) => a.price - b.price);
@@ -231,7 +435,7 @@ export default function Quotes() {
               key={answeredCount}
               className="relative rounded-full p-[2px]"
               style={{
-                background: `conic-gradient(#0F1113 ${getConfidenceScore(profile, isLoggedIn)}%, #D6DADE 0%)`,
+                background: `conic-gradient(${getConfidenceLevel(getConfidenceScore(profile, isLoggedIn)).color} ${getConfidenceScore(profile, isLoggedIn)}%, #D6DADE 0%)`,
               }}
             >
               <div className={`flex items-center gap-1.5 rounded-full px-1 py-1 ${allSurveyDone ? 'bg-[#FAFBFC]' : 'bg-[#F3F5F7]'}`}>
@@ -249,7 +453,7 @@ export default function Quotes() {
         />
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 py-4 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-6 pt-4 max-w-5xl">
 
         {/* Filter & Sort Bar */}
         {unlocked && (
@@ -367,13 +571,15 @@ export default function Quotes() {
 
         {/* Quote Confidence Card — only for logged-in users */}
         {isLoggedIn && (
-          <QuoteConfidenceCard
-            details={profile}
-            setDetails={setProfile}
-            isLoggedIn={isLoggedIn}
-            onOpenMulkiya={() => setShowMulkiyaSheet(true)}
-            onOpenDl={() => setShowDLSheet(true)}
-          />
+          <div className="mt-1">
+            <QuoteConfidenceCard
+              details={profile}
+              setDetails={setProfile}
+              isLoggedIn={isLoggedIn}
+              onOpenMulkiya={() => setShowMulkiyaSheet(true)}
+              onOpenDl={() => setShowDLSheet(true)}
+            />
+          </div>
         )}
 
         {/* Best Quote - Fully Visible */}
@@ -382,7 +588,7 @@ export default function Quotes() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[#FFFFFF] rounded-2xl overflow-hidden mb-3 border border-[#D6DADE]"
+          className="bg-[#FFFFFF] rounded-[20px] overflow-hidden mb-3 border border-[#D6DADE]"
         >
           {/* Badge */}
           <div className="bg-[#D6DADE] px-4 py-1.5 flex items-center gap-2">
@@ -394,7 +600,7 @@ export default function Quotes() {
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  className="w-11 h-11 rounded-[14px] flex items-center justify-center"
                   style={{ backgroundColor: bestQuote.bg }}
                 >
                   <span className="text-sm" style={{ color: bestQuote.color }}>{bestQuote.initial}</span>
@@ -403,44 +609,54 @@ export default function Quotes() {
                   <p className="text-sm font-bold text-[#0F1113]">{bestQuote.provider}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <Star className="w-3 h-3 text-[#5E6670] fill-[#B0B6BE]" />
-                    <span className="text-xs text-[#5E6670]">{bestQuote.rating}</span>
-                    <span className="text-xs text-[#5E6670] mx-1">·</span>
-                    <span className="text-xs text-[#5E6670]">{bestQuote.coverage}</span>
+                    <span className="text-[12px] text-[#5E6670]">{bestQuote.rating}</span>
+                    <span className="text-[12px] text-[#5E6670] mx-0.5">·</span>
+                    <span className="text-[12px] text-[#5E6670] whitespace-nowrap">{bestQuote.coverage}</span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-[#5E6670] line-through">AED {bestQuote.originalPrice}</p>
                 <FlipPrice value={allSurveyDone ? bestQuote.optimizedPrice : bestQuote.price} className="text-lg font-bold text-[#0F1113]" />
-                <p className="text-[10px] text-[#FFFFFF] bg-[#0F1113] px-2 py-0.5 rounded-full mt-1 ml-1 inline-block whitespace-nowrap">
-                  Save {Math.round(((bestQuote.originalPrice - bestQuote.price) / bestQuote.originalPrice) * 100)}%
-                </p>
+                <p className="text-[11px] text-[#8A919A] mt-0.5">per year</p>
               </div>
             </div>
 
             {/* Features */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {bestQuote.features.map((f) => (
-                <span key={f} className="inline-flex items-center gap-1 text-xs bg-[#F3F5F7] text-[#4B525A] px-2.5 py-1 rounded-lg">
-                  <Check className="w-3 h-3 text-[#8A919A]" />
-                  {f}
-                </span>
-              ))}
+            <div className="-mx-4 px-4 overflow-x-auto mb-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-1.5 w-max">
+                {bestQuote.features.map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1 text-[11px] bg-[#F3F5F7] text-[#4B525A] px-2 py-1 rounded-lg whitespace-nowrap">
+                    <Check className="w-3 h-3 text-[#8A919A]" />
+                    {f}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-2">
               <button
-                className="h-10 px-4 rounded-xl bg-[#F3F5F7] text-[#0F1113] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
+                className="h-9 px-4 rounded-xl bg-[#F3F5F7] text-[#0F1113] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0"
               >
                 View details
               </button>
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="flex-1 min-w-0 h-10 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-xs transition-all active:scale-[0.98]"
+                className="flex-1 min-w-0 h-9 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-xs transition-all active:scale-[0.98]"
               >
-                <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${bestQuote.optimizedPrice}/yr` : `Starting at AED ${bestQuote.price}/yr`}</span>
+                <span className="truncate px-2">{allSurveyDone ? `Buy Now · د.إ ${bestQuote.optimizedPrice}/yr` : `Starting at د.إ ${bestQuote.price}/yr`}</span>
               </button>
             </div>
+            <button
+              onClick={() => toggleCompare(bestQuote.id)}
+              className={`mt-2 w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-all active:scale-[0.98] ${
+                compareIds.includes(bestQuote.id) ? 'bg-[#0F1113]/5 text-[#0F1113] ring-1 ring-[#0F1113]' : 'bg-[#FFFFFF] text-[#5E6670] border border-[#D6DADE]'
+              }`}
+            >
+              <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${compareIds.includes(bestQuote.id) ? 'bg-[#0F1113] border-[#0F1113]' : 'border-[#B0B6BE]'}`}>
+                {compareIds.includes(bestQuote.id) && <Check className="w-2.5 h-2.5 text-[#FFFFFF]" />}
+              </div>
+              Add to compare
+            </button>
           </div>
         </motion.div>
         )}
@@ -455,39 +671,63 @@ export default function Quotes() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.05 }}
-                className={`bg-[#FFFFFF] rounded-2xl p-4 border border-[#D6DADE] ${!unlocked ? 'blur-[6px]' : ''}`}
+                className={`bg-[#FFFFFF] rounded-[20px] p-4 border border-[#D6DADE] ${!unlocked ? 'blur-[6px]' : ''}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      className="w-11 h-11 rounded-[14px] flex items-center justify-center"
                       style={{ backgroundColor: quote.bg }}
                     >
                       <span className="text-sm" style={{ color: quote.color }}>{quote.initial}</span>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-[#0F1113]">{quote.provider}</p>
-                      <p className="text-xs text-[#5E6670]">{quote.coverage}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-3 h-3 text-[#5E6670] fill-[#B0B6BE]" />
+                        <span className="text-[12px] text-[#5E6670]">{quote.rating}</span>
+                        <span className="text-[12px] text-[#5E6670] mx-0.5">·</span>
+                        <span className="text-[12px] text-[#5E6670] whitespace-nowrap">{quote.coverage}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <FlipPrice value={allSurveyDone ? quote.optimizedPrice : quote.price} className="text-lg font-bold text-[#0F1113]" />
+                    <p className="text-[11px] text-[#8A919A] mt-0.5">per year</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {quote.features.slice(0, 2).map((f) => (
-                    <span key={f} className="text-xs bg-[#F3F5F7] text-[#5E6670] px-2.5 py-1 rounded-lg">{f}</span>
-                  ))}
+                <div className="-mx-4 px-4 overflow-x-auto mb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-1.5 w-max">
+                    {quote.features.map((f) => (
+                      <span key={f} className="inline-flex items-center gap-1 text-[11px] bg-[#F3F5F7] text-[#4B525A] px-2 py-1 rounded-lg whitespace-nowrap">
+                        <Check className="w-3 h-3 text-[#8A919A]" />
+                        {f}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 {unlocked && (
-                  <div className="flex gap-2 mt-3">
-                    <button className="h-10 px-4 rounded-xl bg-[#F3F5F7] text-[#0F1113] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
-                      View details
+                  <>
+                    <div className="flex gap-2 mt-3">
+                      <button className="h-9 px-4 rounded-xl bg-[#F3F5F7] text-[#0F1113] flex items-center justify-center text-xs transition-all active:scale-[0.98] flex-shrink-0">
+                        View details
+                      </button>
+                      <button className="flex-1 min-w-0 h-9 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-xs transition-all active:scale-[0.98]">
+                        <span className="truncate px-2">{allSurveyDone ? `Buy Now · د.إ ${quote.optimizedPrice}/yr` : `Starting at د.إ ${quote.price}/yr`}</span>
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => toggleCompare(quote.id)}
+                      className={`mt-2 w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-all active:scale-[0.98] ${
+                        compareIds.includes(quote.id) ? 'bg-[#0F1113]/5 text-[#0F1113] ring-1 ring-[#0F1113]' : 'bg-[#FFFFFF] text-[#5E6670] border border-[#D6DADE]'
+                      }`}
+                    >
+                      <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${compareIds.includes(quote.id) ? 'bg-[#0F1113] border-[#0F1113]' : 'border-[#B0B6BE]'}`}>
+                        {compareIds.includes(quote.id) && <Check className="w-2.5 h-2.5 text-[#FFFFFF]" />}
+                      </div>
+                      Add to compare
                     </button>
-                    <button className="flex-1 min-w-0 h-10 rounded-xl bg-[#0F1113] text-[#FFFFFF] flex items-center justify-center text-xs transition-all active:scale-[0.98]">
-                      <span className="truncate px-2">{allSurveyDone ? `Buy Now · AED ${quote.optimizedPrice}/yr` : `Starting at AED ${quote.price}/yr`}</span>
-                    </button>
-                  </div>
+                  </>
                 )}
               </motion.div>
             ))}
@@ -500,7 +740,7 @@ export default function Quotes() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
-              className="bg-[#FFFFFF] rounded-2xl p-4 mx-4 max-w-sm w-full text-center shadow-lg shadow-black/5 border border-[#D6DADE]"
+              className="bg-[#FFFFFF] rounded-[20px] p-4 mx-4 max-w-sm w-full text-center shadow-lg shadow-black/5 border border-[#D6DADE]"
             >
               <div className="w-11 h-11 rounded-xl bg-[#F3F5F7] flex items-center justify-center mx-auto mb-3">
                 <Lock className="w-5 h-5 text-[#0F1113]" />
@@ -562,6 +802,19 @@ export default function Quotes() {
           setProfile((prev) => mergeQuoteFlowDetails(prev, applyMockDlExtraction(prev)));
         }}
       />
+      {compareIds.length > 0 && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          className="fixed bottom-6 left-4 z-40 w-12 h-12 rounded-full bg-[#0F1113] text-[#FFFFFF] shadow-lg shadow-black/20 flex items-center justify-center active:scale-[0.98] transition-transform border border-[#1D1E20]"
+        >
+          <ArrowLeftRight className="w-5 h-5" />
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full bg-[#FFFFFF] text-[#0F1113] text-[11px] font-bold flex items-center justify-center shadow-sm">
+            {compareIds.length}
+          </span>
+        </motion.button>
+      )}
       <AiAssistantButton />
       <EditDetailsSheet
         open={showEditSheet}

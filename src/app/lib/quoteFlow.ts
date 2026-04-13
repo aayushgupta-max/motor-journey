@@ -209,8 +209,12 @@ export function getPendingQuoteActions(
 
   if (!details.spec) pending.push('spec');
   if (!details.coverage) pending.push('coverage');
-  if (!details.mulkiyaUploaded) pending.push('mulkiyaUpload');
-  if (!details.dlUploaded) pending.push('dlUpload');
+  // Only ask for mulkiya if key fields it would fill are still missing
+  const mulkiyaFieldsFilled = details.brand && details.model && details.year && details.city && details.expiry;
+  if (!details.mulkiyaUploaded && !mulkiyaFieldsFilled) pending.push('mulkiyaUpload');
+  // Only ask for DL if key fields it would fill are still missing
+  const dlFieldsFilled = details.dob && details.drivingExperience;
+  if (!details.dlUploaded && !dlFieldsFilled) pending.push('dlUpload');
   if (!details.accidentFreeMonths) pending.push('accidentFreeMonths');
   if (details.accidentFreeMonths === 'Never claimed' && !details.noClaimProof) {
     pending.push('noClaimProof');
@@ -253,6 +257,12 @@ export function applyMockDlExtraction(
     name: details.name || 'Aayush Gupta',
     accidentFreeMonths: details.accidentFreeMonths || '3+ years',
   };
+}
+
+export function getConfidenceLevel(pct: number): { color: string; label: string; message: string } {
+  if (pct >= 80) return { color: '#22C55E', label: 'High', message: 'Quotes are well-tailored' };
+  if (pct >= 60) return { color: '#F59E0B', label: 'Medium', message: 'Add details to improve pricing' };
+  return { color: '#EF4444', label: 'Low', message: 'Add details to improve quotes' };
 }
 
 export function buildVehicleSubtitle(details: QuoteFlowDetails): string {

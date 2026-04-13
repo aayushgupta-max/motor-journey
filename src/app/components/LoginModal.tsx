@@ -1,13 +1,25 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { X, Lock } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => void; onUnlock: () => void; quotesCount?: number }) {
   const [phone, setPhone] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [otp, setOtp] = useState('');
 
-  const phoneValid = phone.replace(/\s/g, '').length >= 7;
+  const formatUAEPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 9);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+    return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatUAEPhone(e.target.value));
+  };
+
+  const phoneDigits = phone.replace(/\D/g, '');
+  const phoneValid = phoneDigits.length === 9 && phoneDigits.startsWith('5');
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -22,27 +34,20 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
           <div className="w-10 h-1 bg-[#D6DADE] rounded-full" />
         </div>
 
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between mb-3 px-0 py-0">
+          <div className="flex flex-col gap-0.5">
+            <h3 className="text-[16px] font-bold text-[#3A3F45] leading-tight">
+              {step === 'phone'
+                ? quotesCount
+                  ? `Sign in to unlock all ${quotesCount} quotes`
+                  : 'Sign in'
+                : 'Enter OTP'}
+            </h3>
             {quotesCount && step === 'phone' && (
-              <div className="w-11 h-11 rounded-xl bg-[#F3F5F7] flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5 text-[#0F1113]" />
-              </div>
+              <p className="text-[12px] font-normal text-[#8A919A]">
+                Compare plans and buy your policy instantly
+              </p>
             )}
-            <div>
-              <h3 className="text-sm font-medium text-[#0F1113] leading-tight">
-                {step === 'phone'
-                  ? quotesCount
-                    ? `Sign in to unlock all ${quotesCount} quotes`
-                    : 'Sign in'
-                  : 'Enter OTP'}
-              </h3>
-              {quotesCount && step === 'phone' && (
-                <p className="text-xs text-[#5E6670] mt-0.5">
-                  Compare plans and buy your policy instantly
-                </p>
-              )}
-            </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F3F5F7] flex items-center justify-center shrink-0">
             <X className="w-4 h-4 text-[#5E6670]" />
@@ -51,7 +56,7 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
 
         {step === 'phone' ? (
           <>
-            <p className="text-xs text-[#5E6670] mb-2">
+            <p className="text-[12px] text-[#8A919A] mb-2">
               Enter your UAE mobile number to continue
             </p>
             <div className="flex items-center gap-2 mb-4">
@@ -61,8 +66,9 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 placeholder="50 123 4567"
+                maxLength={12}
                 className="flex-1 h-12 px-4 rounded-xl bg-[#F3F5F7] text-sm text-[#0F1113] placeholder:text-[#B0B6BE] outline-none focus:ring-2 focus:ring-[#B0B6BE]"
               />
             </div>
@@ -95,7 +101,7 @@ export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => 
           </>
         ) : (
           <>
-            <p className="text-sm text-[#5E6670] mb-4">
+            <p className="text-[12px] text-[#8A919A] mb-4">
               We sent a 4-digit code to +971 {phone}
             </p>
             <input

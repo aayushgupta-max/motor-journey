@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router';
 import TextareaAutosize from 'react-textarea-autosize';
 import { SendHorizonal, Sparkles, Pencil, Check, Plus, X, ArrowRight, ChevronRight, ClipboardList } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
 import { PageHeaderBar } from './PageHeaderBar';
 import { EditDetailsSheet } from './EditDetailsSheet';
@@ -28,6 +28,13 @@ import {
 } from './vehicle-details/vehicleData';
 
 const popularBrands = carBrands.slice(0, 6);
+
+const exampleMessages = [
+  'Renewing my 2022 Toyota Camry, want better rate than last year',
+  'Just bought a brand new Nissan Patrol, need full comprehensive',
+  'Looking for cheapest third party for my 2019 Honda Civic',
+  'BMW X5 2024 from agency, need coverage with Oman extension',
+];
 // Progressive suggestion phases
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
 type CoverageType = 'Comprehensive' | 'Third Party';
@@ -681,6 +688,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
   const [expanded, setExpanded] = useState(false);
+  const [exampleIdx, setExampleIdx] = useState(0);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
@@ -1122,6 +1130,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }
   };
 
+  // Cycle example messages
+  useEffect(() => {
+    const timer = setInterval(() => setExampleIdx((i) => (i + 1) % exampleMessages.length), 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Page mode: render the expanded UI as a full-screen page (no overlay, no home behind)
   if (mode === 'page') {
     return (
@@ -1177,10 +1191,27 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         >
           <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
             {/* Welcome message — always visible */}
-            <div className="mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-              <div className="space-y-1.5">
+            <div className="mr-auto max-w-[85%] rounded-2xl bg-[#E5E7EB] p-1 text-[14px] leading-5 text-[#0F1113]">
+              <div className="rounded-[12px] bg-[#FFFFFF] px-3.5 py-2.5 space-y-1.5">
                 <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
                 <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">Tell us about your car and requirements, we'll find you the best insurance quotes instantly.</p>
+              </div>
+              <div className="px-2.5 pt-1.5 pb-1.5 overflow-hidden">
+                <div className="min-h-[18px]">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={exampleIdx}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
+                    >
+                      <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>
+                      &ldquo;{exampleMessages[exampleIdx]}&rdquo;
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
             {messages.map((message) => (
@@ -1359,6 +1390,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     );
   }
 
+  // (cycling effect moved above page-mode return)
+
   // Trigger mode: only show the collapsed trigger on the home page
   return (
     <div className="space-y-2.5 overflow-visible py-5">
@@ -1401,22 +1434,44 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           </div>
         </div>
 
+        {/* Combined input + example card */}
         <div className="px-5">
-          <button
-            onClick={() => openExpanded()}
-            className="w-full rounded-[18px] border border-[#D6DADE] bg-[#FFFFFF] px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(15,17,19,0.04)] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC]"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm leading-5 text-[#8A919A]">
-                  Write about your car and insurance requirement...
-                </p>
+          <div className="bg-[#E5E7EB] rounded-[18px] p-1 space-y-1.5">
+            {/* Input */}
+            <button
+              onClick={() => openExpanded()}
+              className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 text-left transition-all hover:bg-[#FAFBFC]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm leading-5 text-[#8A919A]">
+                    Write about your car and insurance requirement...
+                  </p>
+                </div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F1113]">
+                  <SendHorizonal className="w-4 h-4 text-white" />
+                </div>
               </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F1113]">
-                <SendHorizonal className="w-4 h-4 text-white" />
+            </button>
+
+            {/* Rotating example */}
+            <div className="px-2.5 pb-1.5 overflow-hidden">
+              <div className="min-h-[18px]">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={exampleIdx}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
+                  >
+                    <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>&ldquo;{exampleMessages[exampleIdx]}&rdquo;
+                  </motion.p>
+                </AnimatePresence>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       </div>
   );

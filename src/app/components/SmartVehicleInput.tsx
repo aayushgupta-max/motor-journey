@@ -1495,7 +1495,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <button
                   key={brand.id}
                   onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] border border-[#D6DADE] px-2.5 py-1.5 text-left hover:border-[#B0B6BE] hover:bg-[#FAFBFC] transition-all"
+                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] px-2.5 py-1.5 text-left hover:bg-[#F3F5F7] transition-all"
                 >
                   <span className="whitespace-nowrap text-[13px] text-[#4B525A]">
                     <span className="font-normal">I have a </span>
@@ -1510,7 +1510,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 <button
                   key={brand.id}
                   onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] border border-[#D6DADE] px-2.5 py-1.5 text-left hover:border-[#B0B6BE] hover:bg-[#FAFBFC] transition-all"
+                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] px-2.5 py-1.5 text-left hover:bg-[#F3F5F7] transition-all"
                 >
                   <span className="whitespace-nowrap text-[13px] text-[#4B525A]">
                     <span className="font-normal">I have a </span>

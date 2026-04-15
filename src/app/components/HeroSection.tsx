@@ -8,7 +8,7 @@ export function HeroSection() {
 
   return (
     <div className="bg-white">
-      <div className="container mx-auto px-4 md:px-6 pt-5 pb-6 md:py-8 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-6 pt-4 pb-6 md:py-8 max-w-5xl">
         {/* Title */}
         <div className="text-center mb-5">
           <h2 className="text-2xl md:text-3xl tracking-tight text-[#0F1113] mb-0 font-bold">
@@ -94,8 +94,8 @@ export function HeroSection() {
               { Icon: ShieldCheck, title: 'Trusted & regulated', desc: 'Every provider licensed by UAE Central Bank' },
               { Icon: TrendingDown, title: 'Save up to 30%', desc: 'Users save AED 800/yr on average' },
             ] as const).map(({ Icon, title, desc }, i) => (
-              <div key={i} className="flex items-center gap-3 bg-[#FFFFFF] border border-[#D6DADE] rounded-[14px] px-3 py-2.5">
-                <div className="w-8 h-8 rounded-[8px] bg-[#F3F5F7] flex items-center justify-center flex-shrink-0">
+              <div key={i} className="flex items-center gap-3.5 bg-[#EDEEF0] rounded-[14px] px-4 py-3.5">
+                <div className="w-8 h-8 rounded-[8px] bg-[#FFFFFF] flex items-center justify-center flex-shrink-0">
                   <Icon className="w-4 h-4 text-[#4B525A]" />
                 </div>
                 <div className="min-w-0">

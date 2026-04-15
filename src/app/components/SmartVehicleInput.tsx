@@ -30,10 +30,10 @@ import {
 const popularBrands = carBrands.slice(0, 6);
 
 const exampleMessages = [
-  'Renewing my 2022 Toyota Camry, want better rate than last year',
-  'Just bought a brand new Nissan Patrol, need full comprehensive',
-  'Looking for cheapest third party for my 2019 Honda Civic',
-  'BMW X5 2024 from agency, need coverage with Oman extension',
+  'I want to renew my 2022 Toyota Camry insurance at a better rate',
+  'I just bought a new Nissan Patrol and need comprehensive cover',
+  'I want the cheapest third party for my 2019 Honda Civic',
+  'I need full coverage for my BMW X5 with Oman extension',
 ];
 // Progressive suggestion phases
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
@@ -688,7 +688,9 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
   const [expanded, setExpanded] = useState(false);
-  const [exampleIdx, setExampleIdx] = useState(0);
+  const [twMsgIdx, setTwMsgIdx] = useState(0);
+  const [twCharIdx, setTwCharIdx] = useState(0);
+  const [twPhase, setTwPhase] = useState<'typing' | 'pausing' | 'clearing'>('typing');
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
@@ -1130,11 +1132,29 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }
   };
 
-  // Cycle example messages
+  // Typewriter effect for placeholder examples
   useEffect(() => {
-    const timer = setInterval(() => setExampleIdx((i) => (i + 1) % exampleMessages.length), 4000);
-    return () => clearInterval(timer);
-  }, []);
+    const msg = exampleMessages[twMsgIdx];
+    if (twPhase === 'typing') {
+      if (twCharIdx < msg.length) {
+        const t = setTimeout(() => setTwCharIdx((c) => c + 1), 40);
+        return () => clearTimeout(t);
+      }
+      // Done typing — pause
+      setTwPhase('pausing');
+    } else if (twPhase === 'pausing') {
+      const t = setTimeout(() => setTwPhase('clearing'), 2000);
+      return () => clearTimeout(t);
+    } else if (twPhase === 'clearing') {
+      if (twCharIdx > 0) {
+        const t = setTimeout(() => setTwCharIdx((c) => c - 1), 20);
+        return () => clearTimeout(t);
+      }
+      // Cleared — next message
+      setTwMsgIdx((i) => (i + 1) % exampleMessages.length);
+      setTwPhase('typing');
+    }
+  }, [twCharIdx, twPhase, twMsgIdx]);
 
   // Page mode: render the expanded UI as a full-screen page (no overlay, no home behind)
   if (mode === 'page') {
@@ -1191,28 +1211,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         >
           <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
             {/* Welcome message — always visible */}
-            <div className="mr-auto max-w-[85%] rounded-2xl bg-[#E5E7EB] p-1 text-[14px] leading-5 text-[#0F1113]">
-              <div className="rounded-[12px] bg-[#FFFFFF] px-3.5 py-2.5 space-y-1.5">
+            <div className="mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113] space-y-1.5">
                 <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
                 <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">Tell us about your car and requirements, we'll find you the best insurance quotes instantly.</p>
-              </div>
-              <div className="px-2.5 pt-1.5 pb-1.5 overflow-hidden">
-                <div className="min-h-[18px]">
-                  <AnimatePresence mode="wait">
-                    <motion.p
-                      key={exampleIdx}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
-                    >
-                      <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>
-                      &ldquo;{exampleMessages[exampleIdx]}&rdquo;
-                    </motion.p>
-                  </AnimatePresence>
-                </div>
-              </div>
+                <p className="text-[12px] leading-[1.5] text-[#8A919A]">
+                  <span className="uppercase tracking-wide text-[10px]">TRY </span>
+                  {exampleMessages[twMsgIdx].slice(0, twCharIdx)}
+                  <span className="inline-block w-[2px] h-[12px] bg-[#8A919A] align-middle ml-px animate-pulse" />
+                </p>
             </div>
             {messages.map((message) => (
               <div
@@ -1434,44 +1440,24 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           </div>
         </div>
 
-        {/* Combined input + example card */}
+        {/* Input with typewriter placeholder */}
         <div className="px-5">
-          <div className="bg-[#E5E7EB] rounded-[18px] p-1 space-y-1.5">
-            {/* Input */}
-            <button
-              onClick={() => openExpanded()}
-              className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 text-left transition-all hover:bg-[#FAFBFC]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm leading-5 text-[#8A919A]">
-                    Write about your car and insurance requirement...
-                  </p>
-                </div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F1113]">
-                  <SendHorizonal className="w-4 h-4 text-white" />
-                </div>
+          <button
+            onClick={() => openExpanded()}
+            className="w-full rounded-[16px] bg-[#FFFFFF] border border-[#D6DADE] p-4 text-left transition-all hover:bg-[#FAFBFC] shadow-[0_2px_8px_rgba(15,17,19,0.06)]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] leading-[20px] text-[#8A919A] h-[40px] overflow-hidden">
+                  {exampleMessages[twMsgIdx].slice(0, twCharIdx)}
+                  <span className="inline-block w-[1.5px] h-[13px] bg-[#8A919A] align-middle ml-px animate-pulse" />
+                </p>
               </div>
-            </button>
-
-            {/* Rotating example */}
-            <div className="px-2.5 pb-1.5 overflow-hidden">
-              <div className="min-h-[18px]">
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={exampleIdx}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
-                  >
-                    <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>&ldquo;{exampleMessages[exampleIdx]}&rdquo;
-                  </motion.p>
-                </AnimatePresence>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F1113] flex-shrink-0">
+                <SendHorizonal className="w-3.5 h-3.5 text-white" />
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
   );

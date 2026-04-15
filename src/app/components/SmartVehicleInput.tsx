@@ -615,11 +615,11 @@ function getNextQuestion(details: RequirementDetails, quoteCount?: number): stri
     if (!details.coverage) return `🎉 ${count} quotes unlocked!\nWas your previous insurance third party or comprehensive?`;
     if (!details.spec) return `${count} quotes and counting!\nIs your car GCC spec or non-GCC?`;
     if (!details.city) return `${count} quotes ready!\nWhich emirate is the car registered in?`;
-    if (!details.nationality) return 'What is your nationality?\nThis helps us match insurer eligibility.';
-    if (!details.drivingExperience) return 'How many years of driving experience do you have?';
-    if (!details.accidentFreeMonths) return 'How long has it been since your last accident or claim?';
-    if (!details.dob) return 'What is your date of birth?\ne.g. 15 Mar 1990';
-    if (!details.name) return 'What is the vehicle owner\'s full name?\nAs it appears on the Emirates ID.';
+    if (!details.nationality) return `${count} quotes ready!\nWhat is your nationality? This helps us match insurer eligibility.`;
+    if (!details.drivingExperience) return `${count} quotes ready!\nHow many years of driving experience do you have?`;
+    if (!details.accidentFreeMonths) return `${count} quotes ready!\nHow long has it been since your last accident or claim?`;
+    if (!details.dob) return `${count} quotes ready!\nWhat is your date of birth? e.g. 15 Mar 1990`;
+    if (!details.name) return `${count} quotes ready!\nWhat is the vehicle owner's full name? As it appears on the Emirates ID.`;
     return `${count} quotes ready for you!\nAdd more details to refine, or go ahead and check them out.`;
   }
   return 'Anything else you\'d like us to consider?';
@@ -691,6 +691,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [twMsgIdx, setTwMsgIdx] = useState(0);
   const [twCharIdx, setTwCharIdx] = useState(0);
   const [twPhase, setTwPhase] = useState<'typing' | 'pausing' | 'clearing'>('typing');
+  const [exampleIdx, setExampleIdx] = useState(0);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [suggestionsHeight, setSuggestionsHeight] = useState<number | null>(null);
   const [query, setQuery] = useState('');
@@ -701,6 +702,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [isExtracting, setIsExtracting] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [hasChosenToRefine, setHasChosenToRefine] = useState(false);
+  const [awaitingPhone, setAwaitingPhone] = useState(false);
   const extractionTimerRef = useRef<number | null>(null);
   const didInitPageMode = useRef(false);
 
@@ -979,6 +981,63 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     const input = text || query;
     if (!input.trim() && attachments.length === 0) return;
 
+    // Handle phone number collection step
+    if (awaitingPhone) {
+      let digits = input.replace(/[^0-9]/g, '');
+      // Strip leading country code if present
+      if (digits.startsWith('971') && digits.length >= 12) {
+        digits = digits.slice(3);
+      } else if (digits.startsWith('00971') && digits.length >= 14) {
+        digits = digits.slice(5);
+      }
+      if (digits.length >= 9) {
+        const phone = digits.slice(0, 10);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), text: input.trim(), role: 'user' },
+        ]);
+        setDetails((prev) => ({ ...prev, mobileNumber: `+971 ${phone}` }));
+        setAwaitingPhone(false);
+        setHasChosenToRefine(true);
+        setQuery('');
+        setIsExtracting(true);
+        setTimeout(() => {
+          const nextQ = getNextQuestion(details);
+          setMessages((prev) => [...prev, { id: Date.now(), text: nextQ, role: 'assistant' }]);
+          setIsExtracting(false);
+        }, 600);
+        return;
+      }
+    }
+
+    // Intercept "Yes, ask and improve confidence!" — ask phone first if needed
+    if (input.trim() === 'Yes, ask and improve confidence!') {
+      if (!details.mobileNumber) {
+        setAwaitingPhone(true);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), text: input.trim(), role: 'user' },
+          { id: Date.now() + 1, text: 'What\'s your mobile number? We\'ll send you the best quotes directly.', role: 'assistant' },
+        ]);
+        setQuery('');
+        return;
+      }
+      // Already have phone — proceed to refine
+      setHasChosenToRefine(true);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), text: input.trim(), role: 'user' },
+      ]);
+      setQuery('');
+      setIsExtracting(true);
+      setTimeout(() => {
+        const nextQ = getNextQuestion(details);
+        setMessages((prev) => [...prev, { id: Date.now(), text: nextQ, role: 'assistant' }]);
+        setIsExtracting(false);
+      }, 600);
+      return;
+    }
+
     const extracted = parseDetailsFromText(input, visibleSystemQuestion);
     let nextDetails = mergeDetails(details, extracted);
     const hadQuoteUnlockReady = isQuoteUnlockReady(details);
@@ -1051,6 +1110,10 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   };
 
   const handleGuidancePromptClick = (text: string) => {
+    if (text === 'Yes, ask and improve confidence!') {
+      typewriterFill(text);
+      return;
+    }
     typewriterFill(text);
   };
 
@@ -1156,6 +1219,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     }
   }, [twCharIdx, twPhase, twMsgIdx]);
 
+  // Cycle example messages for page-mode fade animation
+  useEffect(() => {
+    const timer = setInterval(() => setExampleIdx((i) => (i + 1) % exampleMessages.length), 3000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Page mode: render the expanded UI as a full-screen page (no overlay, no home behind)
   if (mode === 'page') {
     return (
@@ -1211,14 +1280,28 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         >
           <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
             {/* Welcome message — always visible */}
-            <div className="mr-auto max-w-[85%] rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] leading-5 text-[#0F1113] space-y-1.5">
+            <div className="mr-auto max-w-[85%] rounded-2xl bg-[#E5E7EB] p-1 text-[14px] leading-5 text-[#0F1113]">
+              <div className="rounded-[12px] bg-[#FFFFFF] px-3.5 py-2.5 space-y-1.5">
                 <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
                 <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">Tell us about your car and requirements, we'll find you the best insurance quotes instantly.</p>
-                <p className="text-[12px] leading-[1.5] text-[#8A919A]">
-                  <span className="uppercase tracking-wide text-[10px]">TRY </span>
-                  {exampleMessages[twMsgIdx].slice(0, twCharIdx)}
-                  <span className="inline-block w-[2px] h-[12px] bg-[#8A919A] align-middle ml-px animate-pulse" />
-                </p>
+              </div>
+              <div className="px-2.5 pt-1.5 pb-1.5 overflow-hidden">
+                <div className="min-h-[18px]">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={exampleIdx}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
+                    >
+                      <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>
+                      &ldquo;{exampleMessages[exampleIdx]}&rdquo;
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
             {messages.map((message) => (
               <div
@@ -1275,7 +1358,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
             Type naturally and we will capture important details.
           </p>
-          {!isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
+          {!awaitingPhone && !isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
             <div data-chips-scroll className="mb-1.5 -mx-5 overflow-x-auto px-5 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [animation:chipsFadeIn_0.3s_ease-out]">
               <div className="w-max space-y-2">
                 <div className="flex w-max gap-2">

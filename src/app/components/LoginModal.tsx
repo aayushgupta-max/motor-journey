@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { X } from 'lucide-react';
 
-export function LoginModal({ onClose, onUnlock, quotesCount }: { onClose: () => void; onUnlock: () => void; quotesCount?: number }) {
-  const [phone, setPhone] = useState('');
+export function LoginModal({ onClose, onUnlock, quotesCount, initialPhone }: { onClose: () => void; onUnlock: () => void; quotesCount?: number; initialPhone?: string }) {
+  const [phone, setPhone] = useState(() => {
+    if (!initialPhone) return '';
+    // Extract local digits from +971XXXXXXXXX format
+    const digits = initialPhone.replace(/\D/g, '');
+    const local = digits.startsWith('971') ? digits.slice(3) : digits;
+    if (local.length <= 2) return local;
+    if (local.length <= 5) return `${local.slice(0, 2)} ${local.slice(2)}`;
+    return `${local.slice(0, 2)} ${local.slice(2, 5)} ${local.slice(5, 9)}`;
+  });
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [otp, setOtp] = useState('');
 

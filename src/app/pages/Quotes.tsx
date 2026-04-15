@@ -773,7 +773,7 @@ export default function Quotes() {
 
       {/* Login Modal */}
       {showLoginModal && (
-        <LoginModal onClose={() => setShowLoginModal(false)} onUnlock={handleUnlock} quotesCount={allFiltered.length} />
+        <LoginModal onClose={() => setShowLoginModal(false)} onUnlock={handleUnlock} quotesCount={allFiltered.length} initialPhone={profile.mobileNumber} />
       )}
 
       {/* All Filters Bottom Sheet */}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera, Zap, ShieldCheck, TrendingDown } from "lucide-react";
+import { Camera, Zap, ShieldCheck, TrendingDown, TriangleAlert } from "lucide-react";
 import { MulkiyaBottomSheet } from "./MulkiyaBottomSheet";
 import { SmartVehicleInput } from "./SmartVehicleInput";
 
@@ -8,7 +8,7 @@ export function HeroSection() {
 
   return (
     <div className="bg-white">
-      <div className="container mx-auto px-4 md:px-6 pt-4 pb-6 md:py-8 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 max-w-5xl">
         {/* Title */}
         <div className="text-center mb-5">
           <h2 className="text-2xl md:text-3xl tracking-tight text-[#0F1113] mb-0 font-bold">
@@ -37,7 +37,7 @@ export function HeroSection() {
                 <h3 className="text-xl tracking-tight text-[#0F1113] mb-0 font-bold">
                   Upload Mulkiya
                 </h3>
-                <p className="text-sm text-[#4B525A]">
+                <p className="text-[12px] text-[#4B525A]">
                   Snap or upload your registration card
                 </p>
               </div>
@@ -85,23 +85,19 @@ export function HeroSection() {
       </div>
 
       {/* ── Why Policybazaar.ae ─────────────────── */}
-      <div className="bg-[#FAFBFC] pt-6 pb-5 px-4">
+      <div className="py-6 px-4 bg-[#F3F5F7]">
         <div className="max-w-4xl mx-auto">
-          <h3 className="text-[17px] font-bold text-[#0F1113] mb-3">The smarter way to insure</h3>
-          <div className="space-y-2">
+          <h3 className="text-[17px] font-bold text-[#0F1113] text-center mb-4">Why Policybazaar.ae</h3>
+          <div className="flex gap-3">
             {([
-              { Icon: Zap, title: 'Compare in seconds', desc: '20+ insurers, real prices, no calls' },
-              { Icon: ShieldCheck, title: 'Trusted & regulated', desc: 'Every provider licensed by UAE Central Bank' },
-              { Icon: TrendingDown, title: 'Save up to 30%', desc: 'Users save AED 800/yr on average' },
-            ] as const).map(({ Icon, title, desc }, i) => (
-              <div key={i} className="flex items-center gap-3.5 bg-[#EDEEF0] rounded-[14px] px-4 py-3.5">
-                <div className="w-8 h-8 rounded-[8px] bg-[#FFFFFF] flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-[#4B525A]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-[#0F1113]">{title}</p>
-                  <p className="text-[11px] text-[#8A919A]">{desc}</p>
-                </div>
+              { stat: '35+', label: 'Insurers', sublabel: 'Compare instantly' },
+              { stat: '100%', label: 'Regulated', sublabel: 'UAE Central Bank' },
+              { stat: '87%', label: 'Success', sublabel: 'Instant claim assist' },
+            ] as const).map(({ stat, label, sublabel }, i) => (
+              <div key={i} className="flex-1 bg-[#FFFFFF] rounded-[16px] px-3 py-4 text-center">
+                <p className="text-[22px] font-black text-[#0F1113] leading-none tracking-tight">{stat}</p>
+                <p className="text-[12px] font-semibold text-[#4B525A] mt-2">{label}</p>
+                <p className="text-[12px] text-[#8A919A] mt-0.5 leading-snug">{sublabel}</p>
               </div>
             ))}
           </div>
@@ -126,14 +122,25 @@ export function HeroSection() {
                 { name: 'Khalid R.', car: 'Mustang 2024', text: 'Switched insurer, saved AED 900. Under 5 mins.', rating: 4 },
                 { name: 'Noor T.', car: 'Q5 2023', text: 'Roadside + rental car bundled. Can\'t beat it.', rating: 5 },
               ].map((t, i) => (
-                <div key={i} className="w-[200px] flex-shrink-0 bg-[#FAFBFC] rounded-[14px] border border-[#D6DADE] p-3 flex flex-col">
-                  <div className="flex gap-px mb-1.5">
-                    {Array.from({ length: 5 }).map((_, s) => (
-                      <span key={s} className={`text-[11px] ${s < t.rating ? 'text-[#F59E0B]' : 'text-[#D6DADE]'}`}>&#9733;</span>
-                    ))}
+                <div key={i} className="w-[200px] flex-shrink-0 bg-[#FAFBFC] rounded-[14px] border border-[#D6DADE] overflow-hidden flex flex-col">
+                  <div className="w-full aspect-[4/3] overflow-hidden">
+                    <img
+                      src={(i + 1) % 2 === 0
+                        ? 'https://images.unsplash.com/photo-1534708112740-cb40ecb0663e?q=80&w=400&auto=format&fit=crop'
+                        : 'https://images.unsplash.com/photo-1758521961483-30f5908b9c93?q=80&w=400&auto=format&fit=crop'}
+                      alt=""
+                      className="w-full h-full object-cover grayscale"
+                    />
                   </div>
-                  <p className="text-[12px] text-[#4B525A] leading-[1.4] flex-1 mb-2">&ldquo;{t.text}&rdquo;</p>
-                  <p className="text-[12px] font-semibold text-[#0F1113]">{t.name} <span className="font-normal text-[#8A919A]">{t.car}</span></p>
+                  <div className="p-3 flex flex-col flex-1">
+                    <div className="flex gap-px mb-1.5">
+                      {Array.from({ length: 5 }).map((_, s) => (
+                        <span key={s} className={`text-[11px] ${s < t.rating ? 'text-[#F59E0B]' : 'text-[#D6DADE]'}`}>&#9733;</span>
+                      ))}
+                    </div>
+                    <p className="text-[12px] text-[#4B525A] leading-[1.4] flex-1 mb-2">&ldquo;{t.text}&rdquo;</p>
+                    <p className="text-[12px] font-semibold text-[#0F1113]">{t.name} <span className="font-normal text-[#8A919A]">{t.car}</span></p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -142,23 +149,25 @@ export function HeroSection() {
       </div>
 
       {/* ── UAE Insurance Law ────────────────────── */}
-      <div className="bg-[#0F1113] py-6 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h3 className="text-[16px] font-bold text-[#FFFFFF] text-center mb-1">
-            Driving without insurance is illegal
+      <div className="bg-[#0F1113] py-8 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <TriangleAlert className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" strokeWidth={1.5} />
+          <p className="text-[11px] uppercase tracking-widest text-[#5E6670] font-semibold mb-2">UAE Federal Law</p>
+          <h3 className="text-[20px] font-bold text-[#FFFFFF] leading-tight mb-1">
+            Driving without insurance<br />is illegal
           </h3>
-          <p className="text-[11px] text-[#5E6670] text-center mb-4">
-            Federal Law No. 21 of 1995 — all UAE vehicles must be insured
+          <p className="text-[12px] text-[#5E6670] mb-5">
+            Federal Law No. 21 of 1995 — all vehicles must be insured
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {[
-              { stat: 'AED 500', label: 'Fine', color: 'text-[#EF4444]' },
-              { stat: '7 days', label: 'Impounded', color: 'text-[#F59E0B]' },
-              { stat: '100%', label: 'Liability', color: 'text-[#EF4444]' },
+              { stat: 'د.إ 500', label: 'Fine' },
+              { stat: '7 days', label: 'Impounded' },
+              { stat: '100%', label: 'Liability' },
             ].map((p, i) => (
-              <div key={i} className="flex-1 bg-[#1D1E20] rounded-[14px] p-3 text-center border border-[#2A2B2E]">
-                <p className={`text-[20px] font-bold ${p.color}`}>{p.stat}</p>
-                <p className="text-[11px] text-[#8A919A] mt-0.5">{p.label}</p>
+              <div key={i} className="flex-1 bg-[#1D1E20] rounded-[16px] px-3 py-4 text-center">
+                <p className="text-[20px] font-bold text-[#FFFFFF] leading-none">{p.stat}</p>
+                <p className="text-[12px] text-[#5E6670] mt-1.5">{p.label}</p>
               </div>
             ))}
           </div>

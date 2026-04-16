@@ -19,13 +19,6 @@ export default defineConfig({
 
   server: {
     allowedHosts: true,
-    proxy: {
-      '/api/elevenlabs': {
-        target: 'https://api.elevenlabs.io',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/elevenlabs/, ''),
-      },
-    },
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.

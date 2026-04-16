@@ -10,6 +10,8 @@ import {
   emptyQuoteFlowDetails,
   isQuoteUnlockReady,
   shouldRequireCondition,
+  applyMockMulkiyaExtraction,
+  applyMockDlExtraction,
   mergeQuoteFlowDetails,
   getCompletedFieldCount,
   getTotalFieldCount,
@@ -17,7 +19,6 @@ import {
   getConfidenceLevel,
   type QuoteFlowDetails,
 } from '../lib/quoteFlow';
-import { startElevenLabsRequirementSession, type ElevenLabsRequirementSession } from '../lib/elevenLabsAgent';
 import {
   carBrands,
   getYearRange,
@@ -613,6 +614,33 @@ function getGuidancePrompts(
   return prompts;
 }
 
+function getNextQuestion(details: RequirementDetails, quoteCount?: number): string {
+  if (!details.brand) return 'Which make is your car?';
+  if (!details.model) return `Which ${details.brand} model do you have?`;
+  if (!details.year) return 'Which year model is it?';
+  if (!details.condition && shouldRequireCondition(details.year)) {
+    return 'Almost there!\nIs it brand new or pre-owned?';
+  }
+  const count = quoteCount ?? getEstimatedQuoteCount(details);
+  if (isQuoteUnlockReady(details)) {
+    if (!details.coverage) return `🎉 ${count} quotes unlocked!\nWas your previous insurance third party or comprehensive?`;
+    if (!details.spec) return `${count} quotes and counting!\nIs your car GCC spec or non-GCC?`;
+    if (!details.city) return `${count} quotes ready!\nWhich emirate is the car registered in?`;
+    if (!details.nationality) return `${count} quotes ready!\nWhat is your nationality? This helps us match insurer eligibility.`;
+    if (!details.drivingExperience) return `${count} quotes ready!\nHow many years of driving experience do you have?`;
+    if (!details.accidentFreeMonths) return `${count} quotes ready!\nHow long has it been since your last accident or claim?`;
+    if (!details.dob) return `${count} quotes ready!\nWhat is your date of birth? e.g. 15 Mar 1990`;
+    if (!details.name) return `${count} quotes ready!\nWhat is the vehicle owner's full name? As it appears on the Emirates ID.`;
+    return `${count} quotes ready for you!\nAdd more details to refine, or go ahead and check them out.`;
+  }
+  return 'Anything else you\'d like us to consider?';
+}
+
+function getPostUnlockQuestion(quoteCount: number, confidencePct: number): string {
+  const level = getConfidenceLevel(confidencePct);
+  return `${quoteCount} Quotes Unlocked!\n${level.message}.`;
+}
+
 function getEstimatedQuoteCount(details: RequirementDetails): number {
   let count = 0;
 
@@ -648,35 +676,6 @@ function renderAssistantMessage(text: string) {
   );
 }
 
-function sanitizeAssistantQuestion(
-  assistantText: string,
-  details: RequirementDetails
-): string {
-  const trimmed = assistantText.trim();
-  if (!trimmed) return trimmed;
-
-  const nextMissing = getNextMissingCategory(details);
-  const askedCategory = getQuestionCategory(trimmed, details);
-
-  if (!nextMissing) return trimmed;
-
-  const asksModel = askedCategory === 'model' || /which\s+.*model/i.test(trimmed);
-  const asksYear = askedCategory === 'year' || /which\s+.*year/i.test(trimmed);
-  const mentionsKnownBrand = carBrands.some((brand) =>
-    new RegExp(`\\b${brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(trimmed)
-  );
-
-  if (nextMissing === 'brand' && (asksModel || asksYear || mentionsKnownBrand)) {
-    return 'Which make is your car?';
-  }
-
-  if (nextMissing === 'model' && asksYear) {
-    return 'Which model do you have?';
-  }
-
-  return trimmed;
-}
-
 // Ghost autocomplete
 function getGhostText(query: string, suggestions: { text: string }[]): string | null {
   if (!query.trim()) return null;
@@ -699,8 +698,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const fileInputRef = useRef<HTMLInputElement>(null);
   const suggestionsScrollRef = useRef<HTMLDivElement>(null);
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
-  const elevenLabsSessionRef = useRef<ElevenLabsRequirementSession | null>(null);
-  const hasUserSentMessageRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
   const [twMsgIdx, setTwMsgIdx] = useState(0);
   const [twCharIdx, setTwCharIdx] = useState(0);
@@ -715,7 +712,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [editMode, setEditMode] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-  const [welcomeAssistantText, setWelcomeAssistantText] = useState('');
+  const [hasChosenToRefine, setHasChosenToRefine] = useState(false);
+  const [awaitingPhone, setAwaitingPhone] = useState(false);
   const extractionTimerRef = useRef<number | null>(null);
   const didInitPageMode = useRef(false);
 
@@ -761,64 +759,23 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     return () => clearTimeout(timer);
   }, [mode]);
 
-  useEffect(() => {
-    if (mode !== 'page') return;
-    let disposed = false;
-
-    const initSession = async () => {
-      const session = await startElevenLabsRequirementSession({
-        onTurn: (turn) => {
-          if (disposed) return;
-          const extracted: Partial<RequirementDetails> = turn.extracted ?? {};
-          const nextDetails = mergeDetails(previousDetailsRef.current, extracted);
-          previousDetailsRef.current = nextDetails;
-          setDetails(nextDetails);
-
-          const assistantText = (turn.assistantMessage ?? '').trim();
-          if (assistantText) {
-            const safeAssistantText = sanitizeAssistantQuestion(assistantText, nextDetails);
-            if (!hasUserSentMessageRef.current && !welcomeAssistantText) {
-              setWelcomeAssistantText(safeAssistantText);
-              setIsExtracting(false);
-              return;
-            }
-            setMessages((prev) => [
-              ...prev,
-              { id: Date.now() + Math.floor(Math.random() * 1000), text: safeAssistantText, role: 'assistant' },
-            ]);
-          }
-          setIsExtracting(false);
-        },
-        onError: () => {
-          if (disposed) return;
-          // Keep loader visible; reconnect may still deliver the pending response.
-        },
-      });
-      if (disposed) {
-        session?.close();
-        return;
-      }
-      elevenLabsSessionRef.current = session;
-    };
-
-    initSession();
-
-    return () => {
-      disposed = true;
-      elevenLabsSessionRef.current?.close();
-      elevenLabsSessionRef.current = null;
-    };
-  }, [mode]);
-
   const latestAssistantQuestion = [...messages].reverse().find((message) => message.role === 'assistant')?.text;
-  const welcomeLeadText = welcomeAssistantText || "Tell us about your car and requirements, we'll find you the best insurance quotes instantly.";
-  const chatMessages = messages;
   const quoteCount = getEstimatedQuoteCount(details);
-  const shouldAskRefineChoice = false;
-  const visibleSystemQuestion = latestAssistantQuestion;
+  const shouldAskRefineChoice = isQuoteUnlockReady(details) && !hasChosenToRefine;
+  const initialSystemQuestion = messages.length === 0 ? getNextQuestion(details, quoteCount) : undefined;
+  const visibleSystemQuestion = latestAssistantQuestion ?? initialSystemQuestion;
   const normalizedQuery = normalizeVehicleQuery(query);
-  const ghost = null;
-  const guidancePrompts: Array<{ key: keyof RequirementDetails; text: string }> = [];
+  const draftDetails = mergeDetails(details, parseDetailsFromText(query, visibleSystemQuestion));
+  const hasSystemQuestion = Boolean(visibleSystemQuestion);
+  const currentSuggestions = hasSystemQuestion && !shouldAskRefineChoice
+    ? generateSuggestions(query, phase, draftDetails, visibleSystemQuestion)
+    : [];
+  const ghost = normalizedQuery === query.toLowerCase().trim()
+    ? getGhostText(query, currentSuggestions)
+    : null;
+  const guidancePrompts = hasSystemQuestion && phase === 'done'
+    ? getGuidancePrompts(details, query, visibleSystemQuestion, shouldAskRefineChoice)
+    : [];
   const isQuoteReady = isQuoteUnlockReady(details);
   const answeredCount = getCompletedFieldCount(details, isLoggedIn);
   const totalQuestions = getTotalFieldCount(details);
@@ -826,13 +783,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const canSubmit = Boolean(query.trim() || attachments.length > 0);
   const hasExtraction = messages.length > 0 || Object.values(details).some(Boolean);
 
-  const filteredSuggestions: Array<{ label: string; text: string; phase: SuggestionPhase }> = [];
+  const filteredSuggestions = guidancePrompts.length > 0 ? [] : currentSuggestions;
 
   // Debug: log state machine on meaningful changes
   useEffect(() => {
     console.log('[StateMachine]', {
       phase,
       isExtracting,
+      hasChosenToRefine,
       shouldAskRefineChoice,
       isQuoteReady,
       messagesCount: messages.length,
@@ -843,7 +801,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
       suggestionCount: filteredSuggestions.length,
       details: Object.fromEntries(Object.entries(details).filter(([, v]) => v)),
     });
-  }, [phase, isExtracting, shouldAskRefineChoice, isQuoteReady, messages.length]);
+  }, [phase, isExtracting, hasChosenToRefine, shouldAskRefineChoice, isQuoteReady, messages.length]);
 
   const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -976,15 +934,12 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     setEditMode(false);
     setIsExtracting(false);
     setAttachments([]);
-    setWelcomeAssistantText('');
-    hasUserSentMessageRef.current = false;
+    setHasChosenToRefine(false);
     navigate('/');
     if (extractionTimerRef.current) {
       window.clearTimeout(extractionTimerRef.current);
-      extractionTimerRef.current = null;
+      highlightTimerRef.current = null;
     }
-    elevenLabsSessionRef.current?.close();
-    elevenLabsSessionRef.current = null;
     previousDetailsRef.current = emptyDetails;
   };
 
@@ -1033,12 +988,85 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
 
   };
 
-  const handleSubmit = async (text?: string) => {
+  const handleSubmit = (text?: string) => {
     const input = text || query;
     if (!input.trim() && attachments.length === 0) return;
-    hasUserSentMessageRef.current = true;
 
+    // Handle phone number collection step
+    if (awaitingPhone) {
+      let digits = input.replace(/[^0-9]/g, '');
+      // Strip leading country code if present
+      if (digits.startsWith('971') && digits.length >= 12) {
+        digits = digits.slice(3);
+      } else if (digits.startsWith('00971') && digits.length >= 14) {
+        digits = digits.slice(5);
+      }
+      if (digits.length >= 9) {
+        const phone = digits.slice(0, 10);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), text: input.trim(), role: 'user' },
+        ]);
+        setDetails((prev) => ({ ...prev, mobileNumber: `+971 ${phone}` }));
+        setAwaitingPhone(false);
+        setHasChosenToRefine(true);
+        setQuery('');
+        setIsExtracting(true);
+        setTimeout(() => {
+          const nextQ = getNextQuestion(details);
+          setMessages((prev) => [...prev, { id: Date.now(), text: nextQ, role: 'assistant' }]);
+          setIsExtracting(false);
+        }, 600);
+        return;
+      }
+    }
+
+    // Intercept "Yes, ask and improve confidence!" — ask phone first if needed
+    if (input.trim() === 'Yes, ask and improve confidence!') {
+      if (!details.mobileNumber) {
+        setAwaitingPhone(true);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), text: input.trim(), role: 'user' },
+          { id: Date.now() + 1, text: 'What\'s your mobile number? We\'ll send you the best quotes directly.', role: 'assistant' },
+        ]);
+        setQuery('');
+        return;
+      }
+      // Already have phone — proceed to refine
+      setHasChosenToRefine(true);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), text: input.trim(), role: 'user' },
+      ]);
+      setQuery('');
+      setIsExtracting(true);
+      setTimeout(() => {
+        const nextQ = getNextQuestion(details);
+        setMessages((prev) => [...prev, { id: Date.now(), text: nextQ, role: 'assistant' }]);
+        setIsExtracting(false);
+      }, 600);
+      return;
+    }
+
+    const extracted = parseDetailsFromText(input, visibleSystemQuestion);
+    let nextDetails = mergeDetails(details, extracted);
+    const hadQuoteUnlockReady = isQuoteUnlockReady(details);
+
+    // Auto-extract from uploaded mulkiya / DL attachments
     const currentAttachments = [...attachments];
+    const hasMulkiya = currentAttachments.some((a) =>
+      /mulkiya|registration\s*card|vehicle\s*card/i.test(a.name)
+    );
+    const hasDL = currentAttachments.some((a) =>
+      /driving\s*licen[sc]e|^dl[^a-z]|_dl\b/i.test(a.name)
+    );
+    if (hasMulkiya) {
+      nextDetails = mergeDetails(nextDetails, applyMockMulkiyaExtraction(nextDetails) as Partial<RequirementDetails>);
+    }
+    if (hasDL) {
+      nextDetails = mergeDetails(nextDetails, applyMockDlExtraction(nextDetails) as Partial<RequirementDetails>);
+    }
 
     setMessages((prev) => [
       ...prev,
@@ -1048,19 +1076,55 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
         role: 'user',
       },
     ]);
+    setDetails(nextDetails);
+    if (hadQuoteUnlockReady && !hasChosenToRefine) {
+      setHasChosenToRefine(true);
+    }
     setQuery('');
     setAttachments([]);
     setIsExtracting(true);
     inputRef.current?.blur();
 
-    const sent = elevenLabsSessionRef.current?.sendUserMessage(input) ?? false;
-    if (!sent) {
-      setIsExtracting(false);
+    if (extractionTimerRef.current) {
+      window.clearTimeout(extractionTimerRef.current);
     }
-    setPhase('done');
+    extractionTimerRef.current = window.setTimeout(() => {
+      let assistantText = '';
+      const shouldShowRefineChoice = isQuoteUnlockReady(nextDetails) && !hadQuoteUnlockReady && !hasChosenToRefine;
+      if (hasMulkiya && hasDL) {
+        assistantText = '✅ Got it! Extracted details from your Mulkiya and Driving License.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails));
+      } else if (hasMulkiya) {
+        assistantText = '✅ Mulkiya scanned! Extracted your car details and registration info.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails));
+      } else if (hasDL) {
+        assistantText = '✅ Driving License scanned! Extracted your DOB and driving experience.\n' + (shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails));
+      } else {
+        assistantText = shouldShowRefineChoice ? getPostUnlockQuestion(getEstimatedQuoteCount(nextDetails), getConfidenceScore(nextDetails, isLoggedIn)) : getNextQuestion(nextDetails);
+      }
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, text: assistantText, role: 'assistant' },
+      ]);
+      setIsExtracting(false);
+      extractionTimerRef.current = null;
+    }, hasMulkiya || hasDL ? 2000 : 1400);
+
+    const parsed = parseVehicleInput(normalizeVehicleQuery(input));
+    if (parsed?.brand && parsed?.model && parsed?.year && shouldRequireCondition(parsed.year) && parsed?.isBrandNew === undefined) {
+      setPhase('condition');
+    } else if (parsed?.brand && parsed?.model && !parsed?.year) {
+      setPhase('year');
+    } else if (parsed?.brand && !parsed?.model) {
+      setPhase('model');
+    } else {
+      setPhase('done');
+    }
   };
 
   const handleGuidancePromptClick = (text: string) => {
+    if (text === 'Yes, ask and improve confidence!') {
+      typewriterFill(text);
+      return;
+    }
     typewriterFill(text);
   };
 
@@ -1230,7 +1294,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
             <div className="mr-auto max-w-[85%] rounded-2xl bg-[#E5E7EB] p-1 text-[14px] leading-5 text-[#0F1113]">
               <div className="rounded-[12px] bg-[#FFFFFF] px-3.5 py-2.5 space-y-1.5">
                 <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
-                <p className="text-[14px] font-semibold leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{welcomeLeadText}</p>
+                <p className="text-[14px] font-semibold leading-5 text-[#0F1113]">Tell us about your car and requirements, we'll find you the best insurance quotes instantly.</p>
               </div>
               <div className="px-2.5 pt-1.5 pb-1.5 overflow-hidden">
                 <div className="min-h-[18px]">
@@ -1250,7 +1314,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 </div>
               </div>
             </div>
-            {chatMessages.map((message) => (
+            {messages.map((message) => (
               <div
                 key={message.id}
                 className={
@@ -1263,12 +1327,13 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               </div>
             ))}
             {isExtracting && (
-              <div className="mr-auto inline-flex items-center rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5">
+              <div className="mr-auto inline-flex items-center gap-2 rounded-2xl border border-[#D6DADE] bg-[#FFFFFF] px-3.5 py-2.5 text-[14px] text-[#0F1113]">
                 <div className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:180ms]" />
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:360ms]" />
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4B525A] [animation-delay:300ms]" />
                 </div>
+                <span>Extracting details...</span>
               </div>
             )}
             {hasExtraction && isQuoteReady && !isExtracting && (
@@ -1304,7 +1369,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
             Type naturally and we will capture important details.
           </p>
-          {!isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
+          {!awaitingPhone && !isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
             <div data-chips-scroll className="mb-1.5 -mx-5 overflow-x-auto px-5 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [animation:chipsFadeIn_0.3s_ease-out]">
               <div className="w-max space-y-2">
                 <div className="flex w-max gap-2">

@@ -15,7 +15,7 @@ export function HeroSection() {
             Get your car <span className="text-[#5E6670]">insured</span>
           </h2>
           <p className="text-sm text-[#4B525A]">
-            Fast, simple, no paperwork headaches
+            Compare and buy from <span className="font-semibold text-[#0F1113]">35+ insurers</span> in seconds with <span className="font-semibold text-[#0F1113]">instant claims</span> support
           </p>
         </div>
 

@@ -14,8 +14,8 @@ export function HeroSection() {
           <h2 className="text-2xl md:text-3xl tracking-tight text-[#0F1113] mb-0 font-bold">
             Get your car <span className="text-[#5E6670]">insured</span>
           </h2>
-          <p className="text-sm text-[#4B525A]">
-            Compare and buy from <span className="font-semibold text-[#0F1113]">35+ insurers</span> in seconds with <span className="font-semibold text-[#0F1113]">instant claims</span> support
+          <p className="text-sm text-[#767C85]">
+            Compare and buy from <span className="font-semibold text-[#4B525A]">35+ insurers</span> in seconds with <span className="font-semibold text-[#4B525A]">instant claims</span> support
           </p>
         </div>
 

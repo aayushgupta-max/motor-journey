@@ -701,6 +701,8 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const previousDetailsRef = useRef<RequirementDetails>(emptyDetails);
   const elevenLabsSessionRef = useRef<ElevenLabsRequirementSession | null>(null);
   const hasUserSentMessageRef = useRef(false);
+  const welcomeReceivedRef = useRef(false);
+  const welcomeTextRef = useRef('');
   const [expanded, setExpanded] = useState(false);
   const [twMsgIdx, setTwMsgIdx] = useState(0);
   const [twCharIdx, setTwCharIdx] = useState(0);
@@ -777,8 +779,16 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           const assistantText = (turn.assistantMessage ?? '').trim();
           if (assistantText) {
             const safeAssistantText = sanitizeAssistantQuestion(assistantText, nextDetails);
-            if (!hasUserSentMessageRef.current && !welcomeAssistantText) {
+            // First assistant message always goes to welcome card only
+            if (!welcomeReceivedRef.current) {
+              welcomeReceivedRef.current = true;
+              welcomeTextRef.current = safeAssistantText;
               setWelcomeAssistantText(safeAssistantText);
+              setIsExtracting(false);
+              return;
+            }
+            // Skip if it's the same as the welcome message (agent repeating itself)
+            if (safeAssistantText === welcomeTextRef.current) {
               setIsExtracting(false);
               return;
             }
@@ -811,7 +821,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   }, [mode]);
 
   const latestAssistantQuestion = [...messages].reverse().find((message) => message.role === 'assistant')?.text;
-  const welcomeLeadText = welcomeAssistantText || "Tell us about your car and requirements, we'll find you the best insurance quotes instantly.";
+  const welcomeLeadText = welcomeAssistantText;
   const chatMessages = messages;
   const quoteCount = getEstimatedQuoteCount(details);
   const shouldAskRefineChoice = false;
@@ -823,7 +833,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const answeredCount = getCompletedFieldCount(details, isLoggedIn);
   const totalQuestions = getTotalFieldCount(details);
   const confidencePct = getConfidenceScore(details, isLoggedIn);
-  const canSubmit = Boolean(query.trim() || attachments.length > 0);
+  const canSubmit = Boolean((query.trim() || attachments.length > 0) && welcomeLeadText);
   const hasExtraction = messages.length > 0 || Object.values(details).some(Boolean);
 
   const filteredSuggestions: Array<{ label: string; text: string; phase: SuggestionPhase }> = [];
@@ -1036,6 +1046,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const handleSubmit = async (text?: string) => {
     const input = text || query;
     if (!input.trim() && attachments.length === 0) return;
+    if (!welcomeReceivedRef.current) return;
     hasUserSentMessageRef.current = true;
 
     const currentAttachments = [...attachments];
@@ -1226,30 +1237,40 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#FAFBFC] [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] [touch-action:pan-y]"
         >
           <div className="mx-auto w-full max-w-5xl px-5 py-3 space-y-2.5">
-            {/* Welcome message — always visible */}
-            <div className="mr-auto max-w-[85%] rounded-2xl bg-[#E5E7EB] p-1 text-[14px] leading-5 text-[#0F1113]">
-              <div className="rounded-[12px] bg-[#FFFFFF] px-3.5 py-2.5 space-y-1.5">
-                <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
-                <p className="text-[14px] font-semibold leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{welcomeLeadText}</p>
-              </div>
-              <div className="px-2.5 pt-1.5 pb-1.5 overflow-hidden">
-                <div className="min-h-[18px]">
-                  <AnimatePresence mode="wait">
-                    <motion.p
-                      key={exampleIdx}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
-                    >
-                      <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>
-                      &ldquo;{exampleMessages[exampleIdx]}&rdquo;
-                    </motion.p>
-                  </AnimatePresence>
+            {/* Welcome message — shown once ElevenLabs first message arrives */}
+            {welcomeLeadText ? (
+              <div className="mr-auto max-w-[85%] rounded-2xl bg-[#E5E7EB] p-1 text-[14px] leading-5 text-[#0F1113]">
+                <div className="rounded-[12px] bg-[#FFFFFF] px-3.5 py-2.5 space-y-1.5">
+                  <p className="text-[14px] leading-5">Welcome to Policybazaar.ae</p>
+                  <p className="text-[14px] font-semibold leading-5 text-[#0F1113] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{welcomeLeadText}</p>
+                </div>
+                <div className="px-2.5 pt-1.5 pb-1.5 overflow-hidden">
+                  <div className="min-h-[18px]">
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={exampleIdx}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-[12px] leading-[1.5] text-[#5E6670] font-medium"
+                      >
+                        <span className="font-medium text-[#8A919A] uppercase tracking-wide text-[10px]">TRY </span>
+                        &ldquo;{exampleMessages[exampleIdx]}&rdquo;
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="mr-auto max-w-[85%] flex items-center gap-2 px-3.5 py-2.5">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-[#B0B6BE] rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 bg-[#B0B6BE] rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 bg-[#B0B6BE] rounded-full animate-bounce [animation-delay:300ms]" />
+                </div>
+              </div>
+            )}
             {chatMessages.map((message) => (
               <div
                 key={message.id}
@@ -1386,13 +1407,14 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 )}
                 <TextareaAutosize
                   ref={inputRef}
-                  autoFocus
+                  autoFocus={!!welcomeLeadText}
                   inputMode="text"
                   minRows={1}
                   maxRows={5}
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  disabled={!welcomeLeadText}
                   onFocus={() => {
                     // On Safari, scroll chat to bottom + input into view when keyboard opens
                     setTimeout(() => {
@@ -1402,7 +1424,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                       inputBarRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
                     }, 300);
                   }}
-                  placeholder="Describe your car and requirement..."
+                  placeholder={welcomeLeadText ? "Describe your car and requirement..." : "Connecting..."}
                   className="relative z-10 m-0 block w-full resize-none bg-transparent p-0 text-[14px] leading-5 text-[#0F1113] placeholder:text-[#8A919A] outline-none"
                 />
               </div>

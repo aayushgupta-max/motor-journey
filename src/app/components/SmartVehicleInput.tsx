@@ -35,6 +35,17 @@ const exampleMessages = [
   'I want the cheapest third party for my 2019 Honda Civic',
   'I need full coverage for my BMW X5 with Oman extension',
 ];
+
+const highlightKeywords = /\b(renew|comprehensive|third party|full coverage|cheapest|better rate|Oman extension)\b/gi;
+
+function renderTypewriterText(text: string) {
+  const parts = text.split(highlightKeywords);
+  return parts.map((part, i) =>
+    highlightKeywords.test(part)
+      ? <span key={i} className="font-semibold italic text-[#5E6670]">{part}</span>
+      : <span key={i}>{part}</span>
+  );
+}
 // Progressive suggestion phases
 type SuggestionPhase = 'brand' | 'model' | 'year' | 'condition' | 'done';
 type CoverageType = 'Comprehensive' | 'Third Party';
@@ -1532,7 +1543,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] leading-[20px] text-[#8A919A] h-[40px] overflow-hidden">
-                  {exampleMessages[twMsgIdx].slice(0, twCharIdx)}
+                  {renderTypewriterText(exampleMessages[twMsgIdx].slice(0, twCharIdx))}
                   <span className="inline-block w-[1.5px] h-[13px] bg-[#8A919A] align-middle ml-px animate-pulse" />
                 </p>
               </div>

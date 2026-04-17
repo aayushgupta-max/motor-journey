@@ -6,9 +6,15 @@ type ElevenLabsExtractInput = {
   currentDetails: QuoteFlowDetails;
 };
 
+export type ElevenLabsSuggestion = {
+  field: string;
+  options: string[];
+};
+
 export type ElevenLabsTurnResult = {
   extracted: Partial<QuoteFlowDetails> | null;
   assistantMessage: string | null;
+  suggestions: ElevenLabsSuggestion | null;
 };
 
 export type ElevenLabsRequirementSession = {
@@ -27,6 +33,10 @@ type ElevenLabsSessionHandlers = {
 type AgentJsonResponse = {
   message_for_user?: unknown;
   extracted_details?: unknown;
+  suggestion_for_user?: {
+    field?: string;
+    options?: unknown[];
+  };
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -207,14 +217,25 @@ function parseAgentTurn(rawMessage: string): ElevenLabsTurnResult {
   const assistantMessageFromJson = String(parsedMessageJson?.message_for_user ?? '').trim();
   const assistantMessage = assistantMessageFromJson || rawMessage.trim();
 
+  // Extract suggestions
+  const suggestionRaw = parsedMessageJson?.suggestion_for_user;
+  const suggestions: ElevenLabsSuggestion | null =
+    suggestionRaw?.field && Array.isArray(suggestionRaw?.options) && suggestionRaw.options.length > 0
+      ? {
+          field: String(suggestionRaw.field),
+          options: suggestionRaw.options.map((o) => String(o)).filter(Boolean),
+        }
+      : null;
+
   const structured = normalizeDataCollectionResults(parsedMessageJson?.extracted_details)
     ?? findStructuredPayload(parsedMessageJson);
-  if (!structured) return { extracted: null, assistantMessage };
+  if (!structured) return { extracted: null, assistantMessage, suggestions };
 
   const normalized = normalizeKeyedExtraction(structured);
   return {
     extracted: Object.values(normalized).some(Boolean) ? normalized : null,
     assistantMessage,
+    suggestions,
   };
 }
 
@@ -490,7 +511,7 @@ export async function runElevenLabsRequirementTurn(
   input: ElevenLabsExtractInput
 ): Promise<ElevenLabsTurnResult> {
   const firstMessage = input.userMessage.trim();
-  if (!firstMessage) return { extracted: null, assistantMessage: null };
+  if (!firstMessage) return { extracted: null, assistantMessage: null, suggestions: null };
 
   // Backward-compatible single-turn helper using one short-lived socket turn.
   const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY as string | undefined;
@@ -500,10 +521,10 @@ export async function runElevenLabsRequirementTurn(
   const baseUrl = import.meta.env.DEV && !forceDirectInDev
     ? '/api/elevenlabs'
     : (explicitBaseUrl || 'https://api.elevenlabs.io');
-  if (!apiKey || !agentId) return { extracted: null, assistantMessage: null };
+  if (!apiKey || !agentId) return { extracted: null, assistantMessage: null, suggestions: null };
 
   const signedSocketUrl = await getSignedConversationUrl({ baseUrl, apiKey, agentId });
-  if (!signedSocketUrl) return { extracted: null, assistantMessage: null };
+  if (!signedSocketUrl) return { extracted: null, assistantMessage: null, suggestions: null };
 
   const assistantRaw = await runRealtimeTurn({
     socketUrl: signedSocketUrl,
@@ -511,7 +532,7 @@ export async function runElevenLabsRequirementTurn(
     timeoutMs: import.meta.env.DEV ? 20000 : 12000,
     debug: Boolean(import.meta.env.DEV),
   });
-  if (!assistantRaw) return { extracted: null, assistantMessage: null };
+  if (!assistantRaw) return { extracted: null, assistantMessage: null, suggestions: null };
   return parseAgentTurn(assistantRaw);
 }
 

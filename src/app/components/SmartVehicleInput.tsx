@@ -17,7 +17,7 @@ import {
   getConfidenceLevel,
   type QuoteFlowDetails,
 } from '../lib/quoteFlow';
-import { startElevenLabsRequirementSession, type ElevenLabsRequirementSession } from '../lib/elevenLabsAgent';
+import { startElevenLabsRequirementSession, type ElevenLabsRequirementSession, type ElevenLabsSuggestion } from '../lib/elevenLabsAgent';
 import {
   carBrands,
   getYearRange,
@@ -718,6 +718,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
   const [isExtracting, setIsExtracting] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [welcomeAssistantText, setWelcomeAssistantText] = useState('');
+  const [currentSuggestions, setCurrentSuggestions] = useState<ElevenLabsSuggestion | null>(null);
   const extractionTimerRef = useRef<number | null>(null);
   const didInitPageMode = useRef(false);
 
@@ -784,6 +785,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               welcomeReceivedRef.current = true;
               welcomeTextRef.current = safeAssistantText;
               setWelcomeAssistantText(safeAssistantText);
+              setCurrentSuggestions(turn.suggestions ?? null);
               setIsExtracting(false);
               return;
             }
@@ -792,6 +794,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
               setIsExtracting(false);
               return;
             }
+            setCurrentSuggestions(turn.suggestions ?? null);
             setMessages((prev) => [
               ...prev,
               { id: Date.now() + Math.floor(Math.random() * 1000), text: safeAssistantText, role: 'assistant' },
@@ -1048,6 +1051,7 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
     if (!input.trim() && attachments.length === 0) return;
     if (!welcomeReceivedRef.current) return;
     hasUserSentMessageRef.current = true;
+    setCurrentSuggestions(null);
 
     const currentAttachments = [...attachments];
 
@@ -1325,6 +1329,22 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
           <p className="mb-1.5 text-[10px] text-[#5E6670] text-center">
             Type naturally and we will capture important details.
           </p>
+          {/* ElevenLabs suggestion chips */}
+          {currentSuggestions && currentSuggestions.options.length > 0 && (
+            <div className="mb-2 -mx-5 overflow-x-auto px-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 w-max">
+                {currentSuggestions.options.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setQuery(option)}
+                    className="inline-flex flex-shrink-0 items-center rounded-[999px] border border-[#D6DADE] bg-[#FFFFFF] px-3 py-1.5 text-[13px] text-[#4B525A] transition-all hover:border-[#B0B6BE] hover:bg-[#FAFBFC] active:scale-[0.97] whitespace-nowrap"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {!isExtracting && !guidancePrompts.some((p) => p.text === query.trim()) && (filteredSuggestions.length > 0 || guidancePrompts.length > 0 || shouldAskRefineChoice) && (
             <div data-chips-scroll className="mb-1.5 -mx-5 overflow-x-auto px-5 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [animation:chipsFadeIn_0.3s_ease-out]">
               <div className="w-max space-y-2">

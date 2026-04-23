@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Camera, Zap, ShieldCheck, TrendingDown, TriangleAlert } from "lucide-react";
+import { Camera, TriangleAlert, X, ChevronRight } from "lucide-react";
 import { MulkiyaBottomSheet } from "./MulkiyaBottomSheet";
 import { SmartVehicleInput } from "./SmartVehicleInput";
+import { useAuth } from "./AuthContext";
 
 export function HeroSection() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [renewalDismissed, setRenewalDismissed] = useState(false);
+  const { isLoggedIn } = useAuth();
 
   return (
     <div className="bg-white">
@@ -14,10 +17,51 @@ export function HeroSection() {
           <h2 className="text-2xl md:text-3xl tracking-tight text-[#0F1113] mb-0 font-bold">
             Get your car <span className="text-[#5E6670]">insured</span>
           </h2>
-          <p className="text-sm text-[#767C85]">
+          <p className="text-sm text-[#767C85] mb-7">
             Compare and buy from <span className="font-semibold text-[#4B525A]">35+ insurers</span> in seconds with <span className="font-semibold text-[#4B525A]">instant claims</span> support
           </p>
         </div>
+
+        {/* Renewal reminder — shown only when logged in */}
+        {isLoggedIn && !renewalDismissed && (
+          <div className="max-w-4xl mx-auto mb-5">
+            <div className="relative bg-[#F3F5F7] rounded-[20px] border border-[#D6DADE] px-4 pt-[30px] pb-3.5 flex items-start gap-3">
+
+              {/* Top chip */}
+              <div className="absolute -top-3 left-4">
+                <span className="inline-flex items-center gap-1 bg-[#0F1113] text-[#F3F5F7] text-[10px] font-semibold uppercase tracking-wide px-3 py-1 rounded-full whitespace-nowrap">
+                  Renewal Pending in <span className="text-red-300">7 Days</span>
+                </span>
+              </div>
+
+              {/* Insurer logo */}
+              <div className="flex-shrink-0 w-14 h-14 rounded-[10px] bg-[#FFFFFF] border border-[#D6DADE] flex items-center justify-center overflow-hidden">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/9/94/Tokio_Marine_UAE.jpg"
+                  alt="Tokio Marine"
+                  className="w-10 h-10 object-contain grayscale"
+                />
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                <p className="text-[11px] font-semibold text-[#8A919A] uppercase tracking-wide leading-none">2024 Nissan Patrol</p>
+                <p className="text-[16px] font-semibold text-[#4B525A] leading-none">Tokio Marine Agency</p>
+                <button className="inline-flex items-center gap-1 text-[13px] font-bold text-[#4B525A]">
+                  Renew Now <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Premium */}
+              <div className="flex-shrink-0 text-right flex flex-col gap-1.5">
+                <p className="text-[11px] text-[#B0B6BE] line-through leading-none">AED 956</p>
+                <p className="text-[16px] font-bold text-[#0F1113] leading-none">AED 765</p>
+                <span className="inline-block text-[10px] font-semibold text-[#4B525A] bg-[#EDEEF0] px-1.5 py-0.5 rounded-full">20% NCB</span>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         <div className="relative flex flex-col md:grid md:grid-cols-2 gap-5 max-w-4xl mx-auto mb-5">
           {/* Mulkiya Upload Card */}

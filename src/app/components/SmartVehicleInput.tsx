@@ -1493,21 +1493,6 @@ export function SmartVehicleInput({ mode = 'trigger', initialQuery: initialQuery
                 </button>
               ))}
             </div>
-            <div className="flex w-max gap-1.5">
-              {popularBrands.slice(3, 6).map((brand) => (
-                <button
-                  key={brand.id}
-                  onClick={() => openExpanded('I have a ' + brand.name + ' ')}
-                  className="inline-flex w-fit items-center rounded-[999px] bg-[#FFFFFF] px-2.5 py-1.5 text-left hover:bg-[#F3F5F7] transition-all"
-                >
-                  <span className="whitespace-nowrap text-[13px] text-[#4B525A]">
-                    <span className="font-normal">I have a </span>
-                    <span className="font-medium text-[#1D1E20]">{brand.name}</span>
-                    <span className="font-normal">...</span>
-                  </span>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
